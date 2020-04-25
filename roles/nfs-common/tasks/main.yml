@@ -1,0 +1,30 @@
+---
+- name: Install nfs-utils
+  become: true
+  yum:
+    name: 'nfs-utils'
+    state: present
+
+- name: Ensure /etc/exports exists
+  become: true
+  copy:
+    content: ""
+    dest: /etc/exports
+    force: no
+    group: root
+    owner: root
+    mode: 0644
+
+- name: Configure idmapd.conf
+  become: true
+  template:
+    src: 'idmapd.conf.j2'
+    dest: '/etc/idmapd.conf'
+    mode: 0644
+
+- name: Copy sysconfig/nfs
+  become: true
+  copy:
+    src: 'sysconfig-nfs'
+    dest: '/etc/sysconfig/nfs'
+    mode: 0644

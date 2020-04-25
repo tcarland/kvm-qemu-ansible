@@ -1,0 +1,34 @@
+---
+- name: Add path to exports
+  become: true
+  lineinfile:
+    path: '/etc/exports'
+    regexp: '^{{ nfs_storage_export }}'
+    line: '{{ nfs_storage_export }} *(rw,async,no_root_squash,no_subtree_check)'
+
+- name: Create export path
+  become: true
+  file:
+    path: '{{ nfs_storage_export }}'
+    owner: 'root'
+    group: 'root'
+    mode: 0755
+    state: directory
+
+- name: Enable rpcbind
+  become: true
+  service:
+    name: 'rpcbind'
+    state: 'started'
+    enabled: 'yes'
+
+- name: Enable nfs
+  become: true
+  service:
+    name: 'nfs'
+    state: 'started'
+    enabled: 'yes'
+
+- name: Export Filesystems
+  become: true
+  shell: 'exportfs -a'

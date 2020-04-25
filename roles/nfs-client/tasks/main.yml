@@ -1,0 +1,25 @@
+---
+- name: Enable rpcbind
+  become: true
+  service:
+    name: 'rpcbind'
+    state: 'started'
+    enabled: 'yes'
+
+- name: Enable nfs
+  become: true
+  service:
+    name: 'nfs'
+    state: 'started'
+    enabled: 'yes'
+
+- name: Mount NFS Share
+  become: true
+  mount:
+    fstype: nfs
+    opts: defaults
+    dump: '0'
+    passno: '0'
+    state: mounted
+    src: '{{ nfs_storage_server }}:{{ nfs_server_export }}'
+    path: '{{ nfs_storage_mountpoint }}'

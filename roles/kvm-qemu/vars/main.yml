@@ -1,0 +1,21 @@
+
+
+yum_kvm_packages:
+ - qemu-kvm
+ - libvirt
+ - virt-install
+ - virt-top
+ - libguestfs-tools
+ - bridge-utils
+ - ethtool
+
+
+apt_kvm_packages:
+ - kvm-qemu
+ - libvirt-bin
+ - libvirt-daemon-driver-storage-zfs
+ - virtinst
+ - virt-top
+ - libguestfs-tools
+ - bridge-utils
+ - ethtool

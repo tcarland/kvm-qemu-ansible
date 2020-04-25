@@ -1,0 +1,3 @@
+---
+dependencies:
+ - 'nfs-common'

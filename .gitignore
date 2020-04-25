@@ -1,0 +1,10 @@
+*.sw*
+.vagrant
+*.retry
+*.rpm
+*.tar*
+*.jar
+*.zip
+.ansible
+inventory/*
+!inventory/example

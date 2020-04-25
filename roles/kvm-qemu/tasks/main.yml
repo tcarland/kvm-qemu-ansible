@@ -1,0 +1,62 @@
+---
+- name: Install KVM Packages (yum)
+  become: true
+  yum:
+    name: '{{ yum_kvm_packages }}'
+    lock_timeout: 180
+    state: present
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Install KVM Packages (apt)
+  become: true
+  apt:
+    name: '{{ apt_kvm_packages }}'
+    state: present
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+- name: Copy libvirtd.conf
+  become: true
+  copy:
+    src: 'libvirtd.conf'
+    dest: '/etc/libvirt/libvirtd.conf'
+    mode: 0644
+
+- name: Enable listen_tcp in libvirt
+  become: true
+  lineinfile:
+    dest: '/etc/sysconfig/libvirtd'
+    regexp: '^#LIBVIRTD_ARGS="--listen"'
+    line: 'LIBVIRTD_ARGS="--listen"'
+    state: present
+    backup: yes
+  notify: restart_libvirtd
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Enable listen_tcp in libvirt
+  become: true
+  lineinfile:
+    dest: '/etc/sysconfig/libvirtd'
+    regexp: '^#libvirtd_opts=""'
+    line: 'libvirtd_opts="--listen"'
+    state: present
+    backup: yes
+  notify: restart_libvirtd
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+- name: Enable physical bridge br0
+  become: true
+  lineinfile:
+    dest: '/etc/qemu-kvm/bridge.conf'
+    insertafter: 'EOF'
+    line: 'allow br0'
+    regexp: '^allow br0'
+    state: present
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Configure sysctl
+  become: true
+  template:
+    src: "sysctl.conf.j2"
+    dest: "/etc/sysctl.conf"
+    mode: 0644
+  notify: source_sysctl
