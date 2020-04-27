@@ -21,6 +21,13 @@
     dest: '/etc/libvirt/libvirtd.conf'
     mode: 0644
 
+- name: Copy libvirt.conf (client)
+  become: true
+  copy:
+    src: 'libvirt.conf'
+    dest: '/etc/libvirt/libvirt.conf'
+    mode: 0644
+
 - name: Enable listen_tcp in libvirt
   become: true
   lineinfile:
@@ -35,7 +42,7 @@
 - name: Enable listen_tcp in libvirt
   become: true
   lineinfile:
-    dest: '/etc/sysconfig/libvirtd'
+    dest: '/etc/default/libvirtd'
     regexp: '^#libvirtd_opts=""'
     line: 'libvirtd_opts="--listen"'
     state: present
