@@ -1,0 +1,649 @@
+#!/usr/bin/env bash
+#
+#  kvmsh
+#
+#   Command-line tool for manipulating virtual machines wrapping the use
+#   of the kvm tools 'virsh', 'virt-install', and 'virt-clone'.
+#
+#  Timothy C. Arland <tcarland@gmail.com, tarland@trace3.com>
+#
+PNAME=${0##*\/}
+AUTHOR="tcarland@gmail.com"
+VERSION="v0.6.3"
+
+#--------------------------
+# defaults
+pool="default"
+network="bridge=br0"  # bridge=virbr0 is libvirt default NAT interface
+ostype="linux"
+osvar="centos7.0"
+image="CentOS-7-x86_64-Minimal-1908.iso"
+memory="1024,maxmemory=2048"
+vcpus="1"
+graphics="vnc"
+use_console=1
+bootsz="40G"
+disksz="100G"
+mindisksz=5
+disknum=0
+dryrun=1
+format="raw"  # or qcow2
+
+vnc="vnc,listen=0.0.0.0"
+serial="console=ttyS0,115200n8"
+mac=
+
+virt_uri="qemu:///system"
+virsh="virsh --connect $virt_uri"
+
+# map pool name to storage target
+declare -A poolmap
+
+
+usage()
+{
+    printf "\n"
+    printf "Usage: $PNAME [options] <action> <name> \n"
+    printf "  -b|--bootsize <xxG>  : Size of boot disk in Gb. Default is '$bootsz'. \n"
+    printf "  -C|--console         : Use serial console, sets 'none' for --graphics \n"
+    printf "  -c|--cpus     <n>    : Number of vcpus to allocate. \n"
+    printf "  -D|--disknum  <n>    : Number of disks to be attached. \n"
+    printf "  -d|--disksize <xxG>  : Size of disk(s) to be attached with unit, eg. '100G'\n"
+    printf "  -f|--format   <type> : VM disk type: 'qcow2|raw', Default is '$format'. \n"
+    printf "  -G|--graphics <type> : KVM Graphics type; Default is 'VNC'. \n"
+    printf "  -h|--help            : Show usage info and exit. \n"
+    printf "  -i|--image   <name>  : Name of source image (relative to storage pool).\n"
+    printf "     Default is        : '$image'\n"
+    printf "  -n|--dryrun          : Enable DRYRUN, Nothing is executed. \n"
+    printf "  -N|--network <if>    : KVM Network, default is '$network' \n"
+    printf "  -m|--memory  <Mib>   : Memory allocation in Mb and optionally max memory.\n"
+    printf "                         eg. '--memory 1024' or '--memory $memory' \n"
+    printf "  -p|--pool    <name>  : Storage pool to use, if not '$pool'. \n"
+    printf "  -u|--uri     <uri>   : Set the KVM connect uri, default is '$virt_uri' \n"
+    printf "  -V|--version         : Show version info and exit.  \n"
+    printf " \n"
+    printf "   <action>            : VM operation to perform, see below.  \n"
+    printf "   <name>              : Name of VM on which to operate the action. \n"
+    printf " \n"
+    printf " Actions:  \n"
+    printf "   create|delete  <name>  : Create or delete a VM (will not delete volumes)\n"
+    printf "   start|stop     <name>  : Start or stop a VM \n"
+    printf "   delete-pool    <name>  : Removes a pool definition (will not delete dir)\n"
+    printf "   delete-vol     <name>  : Delete a volume (will delete the disk image\n"
+    printf "   attach-disk    <name>  : Attach volumes to a vm (use -D and -d options)\n"
+    printf "   clone <srcvm> <destvm> : Clones vm (set --pool to move storage pools)\n"
+    printf "   setmem    <xb> <name>  : Set a new memory value. Default unit is Kib \n"
+    printf "   setmaxmem <xb> <name>  : Set a max memory value. eg. 'setmaxmem 32G myvm' \n"
+    printf "   setvcpus   <n> <name>  : Set the number of vcpus for an existing vm \n"
+    printf "   status         <name>  : Provides status via shell return code \n"
+    printf "                            0=running, 1=stopped, 2=not found\n"
+    printf " \n"
+    printf "   pool-list              : List available pools \n"
+    printf "   vol-list  <pool>       : List volumes in pool \n"
+    printf "   list                   : List all virtual machines \n"
+    printf "   mac-addr  <name>       : Print HW MacAddress for the given vm \n"
+    printf " \n"
+}
+
+
+version()
+{
+    printf "$PNAME $VERSION\n"
+}
+
+
+list_vms()
+{
+    ( $virsh list --all )
+}
+
+
+list_vols()
+{
+    local poolname="${1:-default}"
+    ( $virsh vol-list --pool $poolname )
+}
+
+
+list_all_pools()
+{
+    ( $virsh pool-list --all --details )
+}
+
+
+is_running()
+{
+    local vm="$1"
+    state=$( $virsh list | grep $vm | awk '{ print $3 }' )
+    if [ "$state" == "running" ]; then
+        return 0
+    fi
+    return 1
+}
+
+
+pool_is_active()
+{
+    local vm="$1"
+    local rt=1
+
+    state=$( $virsh pool-list --all | grep $vm | awk '{ print $2 }' )
+
+    if [ "$state" == "active" ]; then
+        rt=0
+    fi
+
+    return $rt
+}
+
+
+create_disk()
+{
+    local img="$1"
+    local sz="$2"
+    local type="$3"
+
+    echo "( qemu-img create -f $type $img ${sz} )"
+    if [ $dryrun -gt 0 ]; then
+        ( qemu-img create -f $type $img ${sz} )
+    fi
+
+    return $?
+}
+
+
+get_macaddr()
+{
+    local target="$1"
+
+    xml=$( $virsh dumpxml $target 2>/dev/null )
+    mac=$( echo "$xml" | xmllint --xpath 'string(//interface/mac/@address)' - 2>/dev/null )
+
+    echo "$mac"
+
+    return 0
+}
+
+
+get_pools()
+{
+    local -n pary="$1"
+    local pooldir=""
+    local rt=0
+
+    names=$( $virsh pool-list --all --name 2>/dev/null )
+
+    for p in $names; do
+        if [ -n "$p" ]; then
+            pary["$p"]=""
+        fi
+    done
+
+    if [ ${#pary[@]} -eq 0 ]; then
+        return 1
+    fi
+
+    for p in ${!pary[@]}; do
+        pooldir=$( $virsh pool-dumpxml $p 2>/dev/null | \
+          grep -A5 target | \
+          grep path | \
+          sed -E 's/.*<path>(.*)<\/path>/\1/' )
+        if [ -d $pooldir ]; then
+            pary[$p]="$pooldir"
+        fi
+    done
+
+    return $rt
+}
+
+
+get_num_drives()
+{
+    local vmname="$1"
+
+    devs=$( $virsh dumpxml $vmname | \
+      grep -A5 "<disk type='file' device='disk'>" | \
+      grep "<target dev=" | \
+      sed -E "s/^.*<target dev='(.*)' bus.*/\1/" | \
+      sed -E 's/vd(.)/\1/' )
+
+    return ${#devs}
+}
+
+# ------------------------------------------------
+
+action=
+name=
+rt=0
+chars=( {b..z} )
+nums=( {1..25} )
+maxvols=${#chars[@]}
+
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        -c|--cpus)
+            vcpus="$2"
+            shift
+            ;;
+        -C|--console)
+            use_console=0
+            ;;
+        -f|--disk-format|--format)
+            format="$2"
+            shift
+            ;;
+        -G|--graphics)
+            graphics="$2"
+            shift
+            ;;
+        -i|--image)
+            image="$2"
+            shift
+            ;;
+        -l|--list)
+            action="list"
+            ;;
+        -m|--memory)
+            memory="$2"
+            shift
+            ;;
+        -N|--network)
+            network="$2"
+            shift
+            ;;
+        -n|--dryrun)
+            echo " <DRYRUN> enabled"
+            dryrun=0
+            ;;
+        -b|--bootsize)
+            bootsz="$2"
+            shift
+            ;;
+        -d|--disksize)
+            disksz="$2"
+            val=${disksz%%[!0-9]*}
+            if (( $val < $mindisksz )); then
+                echo "$PNAME Error: Disk Size is less than minimum $mindisksz G" >&2
+                exit 1
+            fi
+            shift
+            ;;
+        -D|--disknum)
+            disknum="$2"
+            shift
+            ;;
+        -p|--pool)
+            pool="$2"
+            shift
+            ;;
+        -u|--uri)
+            virt_uri="$2"
+            shift
+            ;;
+        -V|--version)
+            version
+            exit 0
+            ;;
+        *)
+            action="$1"
+            shift
+            name="$1"
+            shift
+            args="$@"
+            shift $#
+            ;;
+    esac
+    shift
+done
+
+if [ $use_console -eq 0 ]; then
+    graphics="none"
+fi
+
+
+get_pools poolmap
+
+
+case "$action" in
+
+# --- ATTACH DRIVES
+attach*)
+    target="${poolmap[$pool]}"
+    live="--config"
+
+    if [ -z "$target" ]; then
+        echo "Error determing pool storage directory: '$pool'" >&2
+        exit 1
+    fi
+    if [ -z "$name" ]; then
+        echo "$PNAME Error no vm name defined."
+        usage
+        exit 1
+    fi
+
+    get_num_drives $name
+
+    rt=$?
+    if [ $rt -gt 1 ]; then
+        echo "$PNAME only supports attaching volumes to VM's with a single drive" >&2
+        exit 1
+    fi
+
+    if is_running $name; then
+        live="--live"
+    fi
+
+    for (( i=0; i<$disknum; )); do
+        dev="vd${chars[i++]}"
+        img="$target/${name}-$dev.img"
+
+        create_disk $img $disksz $format
+
+        rt=$?
+        if [ $rt -ne 0 ]; then
+            echo "$PNAME Error in create_disk() '$img'" >&2
+            break
+        fi
+
+        echo "( $virsh attach-disk $name $img $dev --targetbus virtio $live )"
+
+        if [ $dryrun -ne 0 ]; then
+            ( $virsh attach-disk $name $img $dev --targetbus virtio $live )
+
+            rt=$?
+            if [ $rt -ne 0 ]; then
+                echo "$PNAME Error in attach-disk" >&2
+                break
+            fi
+        fi
+    done
+    ;;
+
+# --- CREATE VMS
+create)
+    target="${poolmap[$pool]}"
+
+    if [ -z "$target" ]; then
+        echo "Error determining pool storage directory for '$pool'" >&2
+        exit 1
+    fi
+
+    if [ -z "$name" ]; then
+        echo "$PNAME Error no vm name defined." >&2
+        exit 1
+    fi
+
+    disk="$name-vda.img"
+    diskimg="${target}/$disk"
+
+    create_disk $diskimg $bootsz $format
+
+    rt=$?
+    if [ $rt -ne 0 ]; then
+        echo "$PNAME Error in create_disk()" >&2
+        exit $rt
+    fi
+
+    srcimg="$target/$image"
+
+    cmdargs=(--name "$name" \
+    --memory $memory --vcpus $vcpus \
+    --os-type "$ostype" --os-variant "$osvar" \
+    --disk "path=$diskimg" --network "$network" \
+    --location "$srcimg")
+
+    if [ $use_console -eq 0 ]; then
+        cmdargs+=(--graphics "none" --extra-args="$serial")
+    else
+        if [ "${graphics,,}" == "vnc" ]; then
+            cmdargs+=(--graphics "$vnc" --noautoconsole)
+        fi
+    fi
+
+    echo "( virt-install --connect $virt_uri ${cmdargs[@]} )"
+    if [ $dryrun -gt 0 ]; then
+        ( virt-install --connect $virt_uri ${cmdargs[@]} )
+        rt=$?
+    fi
+
+    if [ $rt -eq 0 ]; then
+        get_macaddr $name
+    fi
+    ;;
+
+# --- CLONE VM
+clone)
+    path="${poolmap[$pool]}"
+    target="$args"
+    file="$path/$target-vda.img"
+
+    if [ -z "$path" ]; then
+        echo "$PNAME Error determining storage path" >&2
+        exit 1
+    fi
+
+    if [ -z "$name" ] || [ -z "$target" ]; then
+        echo "$PNAME Error: no targets provided."
+        usage
+        exit 1
+    fi
+
+    echo "( virt-clone --connect $virt_uri --original $name --name $target --file $file )"
+    if [ $dryrun -gt 0 ]; then
+        ( virt-clone --connect $virt_uri --original $name --name $target --file $file )
+        rt=$?
+    fi
+
+    # acquire the new MAC Addr
+    if [ $rt -eq 0 ]; then
+        get_macaddr $target
+    fi
+    ;;
+
+# --- MAC-ADDRESS
+get-mac*|mac-addr*)
+    if [ -z "$name" ]; then
+        echo "$PNAME Error: no target provided."
+        usage
+        exit 1
+    fi
+
+    get_macaddr $name
+    rt=$?
+    ;;
+
+# --- STATUS
+status)
+    if [ -z "$name" ]; then
+        exit 2
+    fi
+
+    is_running $name
+    rt=$?
+    ;;
+
+# --- PASSTHROUGH OPERATIONS to virsh
+start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|define)
+    if [ -z "$name" ]; then
+        echo "$PNAME Error: no name provided."
+        usage
+        exit 1
+    fi
+
+    if [ $dryrun -gt 0 ]; then
+        ( $virsh $action $name )
+    fi
+    ;;
+
+# --- SET MEMORY
+setmem|setmaxmem)
+    if [ -z "$name" ] || [ -z "$args" ]; then
+        echo "$PNAME Error with arguments"
+        usage
+        exit 1
+    fi
+    # flip args
+    mem="$name"
+    name="$args"
+    live="--config"
+
+    if is_running $name; then
+        if [[ $action =~ ^setmaxmem.*$ ]]; then
+            echo "$PNAME Error: VM must off or suspended to change Max Memory" >&2
+            exit 1
+        fi
+        live="--live"
+    fi
+
+    echo "( $virsh $action $name $mem $live )"
+    if [ $dryrun -gt 0 ]; then
+        ( $virsh $action $name $mem $live )
+        rt=$?
+    fi
+    ;;
+
+# --- SET VCPUS
+setvcpus)
+    if [ -z "$name" ] || [ -z "$args" ]; then
+        echo "$PNAME Error with arguments"
+        usage
+        exit 1
+    fi
+    # flip args
+    cnt="$name"
+    name="$args"
+    live="--config"
+
+    if is_running $name; then
+        live="--live"
+    fi
+
+    echo "( $virsh setvcpus $name $cnt $live )"
+    if [ $dryrun -gt 0 ]; then
+        ( $virsh setvcpus $name $cnt --maximum $live )
+        ( $virsh setvcpus $name $cnt $live )
+        rt=$?
+    fi
+    ;;
+
+# --- STOP VMS
+stop|shutdown|destroy)
+    if [ -z "$name" ]; then
+        echo "$PNAME Error: no name provided."
+        usage
+        exit 1
+    fi
+
+    if is_running $name; then
+        echo "$PNAME stopping '$name'.."
+        echo "( $virsh destroy $name )"
+        if [ $dryrun -gt 0 ]; then
+            ( $virsh destroy $name )
+            rt=$?
+        fi
+    else
+        echo "VM does not appear to be running.."
+    fi
+    ;;
+
+# --- DELETE VMS
+delete|undefine)
+    if [ -z "$name" ]; then
+        echo "$PNAME Error: no name provided."
+        usage
+        exit 1
+    fi
+
+    if is_running $name; then
+        echo "$PNAME stopping '$name'.."
+        echo "( $virsh destroy $name )"
+        if [ $dryrun -gt 0 ]; then
+            ( $virsh destroy $name )
+            rt=$?
+        fi
+    fi
+
+    echo "( $virsh undefine $name )"
+    if [ $dryrun -gt 0 ]; then
+        ( $virsh undefine $name )
+        rt=$?
+    fi
+    ;;
+
+# --- DELETE VOLUMES
+vol-delete|delete-vol)
+    echo "( $virsh vol-delete $name --pool $pool )"
+    if [ $dryrun -gt 0 ]; then
+        ( $virsh vol-delete $name --pool $pool )
+        rt=$?
+    fi
+    ;;
+
+# --- DELETE POOLS
+# avoiding pool-delete destructiveness
+pool-delete|delete-pool)
+    if [ -n "$name" ]; then
+        pool="$name"
+    fi
+    if pool_is_active $pool; then
+        echo "Stopping pool '$pool'.."
+        echo "( $virsh pool-destroy $pool )"
+        if [ $dryrun -gt 0 ]; then
+            ( $virsh pool-destroy $pool )
+        fi
+    fi
+
+    echo "( $virsh pool-undefine $pool )"
+    if [ $dryrun -gt 0 ]; then
+        ( $virsh pool-undefine $pool )
+        rt=$?
+    fi
+    ;;
+
+# -- LIST POOLS
+list-pool*|pool-list)
+    if [ ${#poolmap[@]} -eq 0 ]; then
+        echo "No pools found or defined.."
+        exit 0
+    fi
+
+    printf " %15s    %30s    %10s\n" "  Pool Name  " "  Target Path   " " State"
+    printf " %15s    %30s    %10s\n" " ---------------- " "--------------------- " "----------"
+
+    for pool in ${!poolmap[@]}; do
+        state="inactive"
+
+        if pool_is_active $pool; then
+            state="active"
+        fi
+
+        printf " %15s    %30s    %10s\n" "$pool" "${poolmap[$pool]}" "$state"
+    done
+    ;;
+
+# -- LIST VMS
+list-vm*|list)
+    list_vms
+    ;;
+
+# --- LIST VOLUMES
+list-vol*|vol-list)
+    if [ -n "$name" ]; then
+        pool="$name"
+    fi
+
+    list_vols $pool
+    ;;
+
+*)
+    echo "Action not recognized"
+    usage
+    ;;
+esac
+
+exit $rt
