@@ -268,7 +268,7 @@ build)
                 ( sudo sed -i'' /$ip/d $leasecfg )
                 ( sudo sed -i'' /$ip/d $leasefile )
                 # apply new lease
-                printf "dhcp-host=${mac},${ip} \n" >> $leasecfg
+                ( sudo bash -c "printf 'dhcp-host=%s,%s \n' ${mac} ${ip} >> $leasecfg" )
 
                 # replace hosts entry
                 ( grep "$ip " $hostsfile >/dev/null 2>&1 )
@@ -276,12 +276,13 @@ build)
                 if [ $rt -eq 0 ]; then
                     ( sudo sed -i'' /$ip/d $hostsfile )
                 fi
-                printf "%s \t %s \t %s\n" $ip $hostname $name >> $hostsfile
+                ( sudo bash -c "printf '%s \t %s \t %s\n' $ip $hostname $name >> $hostsfile" )
             fi
         done
     done
 
     # restart dnsmasq
+    echo " -> Restarting DnsMasq"
     if [ $dryrun -eq 0 ]; then
         ( sudo systemctl restart dnsmasq )
     fi
