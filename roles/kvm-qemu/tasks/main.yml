@@ -67,3 +67,28 @@
     dest: "/etc/sysctl.conf"
     mode: 0644
   notify: source_sysctl
+
+- name: Add Users to libvirt group
+  become: true
+  user:
+    name: '{{ item.key }}'
+    groups: 'libvirt'
+    append: yes
+  with_dict: '{{ kvm_users }}'
+
+- name: Add Users to kvm group
+  become: true
+  user:
+    name: '{{ item.key }}'
+    groups: 'kvm'
+    append: yes
+  with_dict: '{{ kvm_users }}'
+
+- name: Create KVM Primary Storage Pool directory
+  become: true
+  file:
+    path: '{{ kvm_primary_storage }}'
+    owner: 'root'
+    group: 'kvm_role_group'
+    mode: 0775
+    state: directory

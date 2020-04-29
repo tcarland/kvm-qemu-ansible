@@ -1,0 +1,13 @@
+
+
+yum_mgmt_packages:
+  - jq
+  - libxml2
+  - clustershell
+  - dnsmasq
+
+apt_mgmt_packages:
+  - jq
+  - libxml2
+  - clustershell
+  - dnsmasq

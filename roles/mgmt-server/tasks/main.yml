@@ -1,0 +1,37 @@
+---
+- name: Install EPEL Release on RHEL-based systems
+  become: true
+  yum:
+    name: 'epel-release'
+    lock_timeout: 180
+    state: present
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Install Mgmt Prerequisites (yum)
+  become: true
+  yum:
+    name: '{{ yum_mgmt_packages }}'
+    lock_timeout: 180
+    state: present
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Install Mgmt Prerequisites (apt)
+  become: true
+  apt:
+    name: '{{ yum_mgmt_packages }}'
+    state: present
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+ - name: Configure DnsMasq
+   become: true
+   template:
+     src: 'dnsmasq.conf.j2'
+     dest: '/etc/dnsmasq.conf'
+     mode: 0644
+
+ - name: Enable and Start DnsMasq
+   become: true
+   service:
+     name: 'dnsmasq'
+     state: 'started'
+     enabled: 'yes'

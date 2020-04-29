@@ -21,7 +21,7 @@
 #  ]
 #
 PNAME=${0##\/*}
-VERSION="0.4.1"
+VERSION="0.4.5"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -58,6 +58,15 @@ usage()
     printf "\n"
     printf "    <action>         : Action to perform: build|start|stop|delete \n"
     printf " <manifest.json>     : Name of JSON manifest file \n"
+    printf "\n"
+    printf " Actions: \n"
+    printf "     build           : Build VMs defined by the manifest \n"
+    printf "                       Clones a source VM and configs DnsMasq \n"
+    printf "     start           : Start all VMs in the manifest \n"
+    printf "     stop            : Stop all VMs in the manifest \n"
+    printf "    delete           : Delete all VMs defined by the manifest \n"
+    printf "   sethostname       : Configures VM hostnames. If using non-default \n"
+    printf "                       source VM, set '-s' accordingly \n"
     printf "\n"
 }
 
@@ -96,8 +105,8 @@ ask()
     done
 }
 
-
-is_defined() {
+is_defined()
+{
     local h="$1"
     local vm="$2"
 
@@ -108,6 +117,30 @@ is_defined() {
     fi
 
     return 1
+}
+
+wait_for_host()
+{
+    local name="$1"
+    local rt=1
+
+    if [ -z "$name" ]; then
+        echo "$PNAME Error in 'wait_for_host' no target provided."
+        return $rt
+    fi
+
+    for x in {1..5}; do
+        yf=$( ssh $name 'uname -n' 2>/dev/null )
+        if [[ $yf == $srcvm ]]; then
+            printf "\n -> Host is Alive! \n"
+            rt=0
+            break
+        fi
+        printf ". "
+        sleep 3
+    done
+
+    return $rt
 }
 
 
@@ -173,7 +206,7 @@ fi
 case "$action" in
 
 # --- BUILD Infrastructure
-build)
+build|create)
     if [ -z "$manifest" ]; then
         echo "KVM Spec JSON not provided."
         usage
@@ -191,9 +224,9 @@ build)
     fi
 
     if [ $dryrun -eq 0 ]; then
-        echo " -> Stopping dnsmasq for adding configuring leases"
+        echo " -> Stopping dnsmasq to configure leases"
         ( sudo systemctl stop dnsmasq )
-        ( sudo cp /etc/hosts /etc/hosts.bak )
+        ( sudo cp $hostsfile ${hostsfile}.bak )
     fi
 
     for (( i=0; i<$nhosts; i++ )); do
@@ -271,11 +304,7 @@ build)
                 ( sudo bash -c "printf 'dhcp-host=%s,%s \n' ${mac} ${ip} >> $leasecfg" )
 
                 # replace hosts entry
-                ( grep "$ip " $hostsfile >/dev/null 2>&1 )
-                rt=$?
-                if [ $rt -eq 0 ]; then
-                    ( sudo sed -i'' /$ip/d $hostsfile )
-                fi
+                ( sudo sed -i'' /$ip/d $hostsfile )
                 ( sudo bash -c "printf '%s \t %s \t %s\n' $ip $hostname $name >> $hostsfile" )
             fi
         done
@@ -291,7 +320,7 @@ build)
 # --- START
 start)
     if [ -z "$manifest" ]; then
-        echo "KVM Spec JSON not provided."
+        echo "$PNAME Error: JSON manifest not provided."
         usage
         exit 1
     fi
@@ -314,10 +343,62 @@ start)
     done
     ;;
 
+# --- SET HOSTNAME
+sethostname*)
+    echo " -> Setting hostnames for '$manifest'"
+
+    # Get the last vm in the set
+    nhosts=$( jq 'length' $manifest )
+    (( nlast=$nhosts-1 ))
+    nvms=$( jq ".[$nlast].vmspecs | length" $manifest )
+    (( nvms=$nvms-1 ))
+    host=$( jq -r ".[$nlast].host" $manifest )
+    lastvm=$( jq -r ".[$nlast].vmspecs | .[$nvms].name" $manifest )
+
+    # Validate the vm has been started.
+    ( ssh $host "kvmsh status $lastvm" )
+    rt=$?
+    if [ $rt -ne 0 ]; then
+        echo "$PNAME Error: Hosts appears off, run 'start' first?"
+        exit $rt
+    fi
+
+    # Wait for the vm to respond to logins
+    printf " -> Waiting for the last host, '%s' to respond . . " $lastvm
+    ( sleep 5 )
+    if [ $dryrun -eq 0 ]; then
+        wait_for_host "$lastvm"
+        rt=$?
+    fi
+    echo ""
+
+    if [ $rt -ne 0 ]; then
+        echo "Error waiting for host, no response or request timed out"
+        exit 1
+    fi
+
+    # set hostnames
+    for (( i=0; i<$nhosts; i++ )); do
+        num_vms=$( jq ".[$i].vmspecs | length" $manifest )
+
+        for (( v=0; v < $num_vms; v++ )); do
+            name=$( jq -r ".[$i].vmspecs | .[$v].name" $manifest )
+            hostname=$( jq -r ".[$i].vmspecs | .[$v].hostname" $manifest )
+
+            echo "( ssh $name 'sudo hostname $hostname' )"
+            echo "( ssh $name \"sudo bash -c 'echo $hostname > /etc/hostname'\" )"
+            if [ $dryrun -eq 0 ]; then
+                ( ssh $name "sudo hostname $hostname" >/dev/null 2>&1 )
+                ( ssh $name "sudo bash -c 'echo $hostname > /etc/hostname'" )
+            fi
+        done
+    done
+    ;;
+
 # --- STOP
 stop|destroy)
     if [ -z "$manifest" ]; then
-        echo "KVM Spec JSON not provided."
+        echo "$PNAME Error: JSON manifest not provided."
         usage
         exit 1
     fi
@@ -343,7 +424,7 @@ stop|destroy)
 # --- DELETE all VMS
 delete)
     if [ -z "$manifest" ]; then
-        echo "KVM Spec JSON not provided."
+        echo "$PNAME Error: JSON manifest not provided."
         usage
         exit 1
     fi
@@ -354,8 +435,9 @@ delete)
         echo "WARNING! 'delete' action will remove all VM's!"
         echo "    (Consider testing with --dryrun option) "
         echo ""
+
         if [ $delete -eq 0 ]; then
-            echo "NOTE --keep-disks enabled. Volumes will not be deleted"
+            echo "NOTE --keep-disks enabled. Volumes will not be deleted."
             echo ""
         fi
         ask "Are you certain you wish to continue? " "N"

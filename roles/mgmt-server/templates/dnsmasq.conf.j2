@@ -1,0 +1,91 @@
+# Configuration file for dnsmasq.
+#
+# Format is one option per line, legal options are the same
+# as the long options legal on the command line. See
+# "/usr/sbin/dnsmasq --help" or "man 8 dnsmasq" for details.
+
+domain-needed
+bogus-priv
+
+no-resolv
+no-poll
+
+server={{ dnsmasq_primary_resolver }}
+server={{ dnsmasq_secondary_resolver }}
+
+domain={{ dnsmasq_kvm_domain }}
+
+dhcp-range={{ dhcp_range_start }},{{dhcp_range_end}},{{ dhcp_range_netmask }},12h
+dhcp-option=option:router,{{ dhcp_router_ip }}
+
+# Enable DHCPv6. Note that the prefix-length does not need to be specified
+# and defaults to 64 if missing/
+#dhcp-range=1234::2, 1234::500, 64, 12h
+
+# Set the NTP time server addresses to 192.168.0.4 and 10.10.0.5
+#dhcp-option=option:ntp-server,192.168.0.4,10.10.0.5
+
+# Send DHCPv6 option. Note [] around IPv6 addresses.
+#dhcp-option=option6:dns-server,[1234::77],[1234::88]
+
+# Set the boot filename for netboot/PXE. You will only need
+# this is you want to boot machines over the network and you will need
+# a TFTP server; either dnsmasq's built in TFTP server or an
+# external one. (See below for how to enable the TFTP server.)
+#dhcp-boot=pxelinux.1
+
+# The same as above, but use custom tftp-server instead machine running dnsmasq
+#dhcp-boot=pxelinux,server.name,192.168.1.100
+
+# Enable dnsmasq's built-in TFTP server
+#enable-tftp
+
+# Set the root directory for files available via FTP.
+#tftp-root=/var/ftpd
+
+# Do not abort if the tftp-root is unavailable
+tftp-no-fail
+
+# Make the TFTP server more secure: with this set, only files owned by
+# the user dnsmasq is running as will be send over the net.
+tftp-secure
+
+# This option stops dnsmasq from negotiating a larger blocksize for TFTP
+# transfers. It will slow things down, but may rescue some broken TFTP
+# clients.
+#tftp-no-blocksize
+
+# An example of dhcp-boot with an external TFTP server: the name and IP
+# address of the server are given after the filename.
+# Can fail with old PXE ROMS. Overridden by --pxe-service.
+#dhcp-boot=/var/ftpd/pxelinux.0,boothost,192.168.0.3
+
+# If there are multiple external tftp servers having a same name
+# (using /etc/hosts) then that name can be specified as the
+# tftp_servername (the third option to dhcp-boot) and in that
+# case dnsmasq resolves this name and returns the resultant IP
+# addresses in round robin fasion. This facility can be used to
+# load balance the tftp load among a set of servers.
+#dhcp-boot=/var/ftpd/pxelinux.0,boothost,tftp_server_name
+
+# Set the limit on DHCP leases, the default is 150
+#dhcp-lease-max=150
+
+# The DHCP server needs somewhere on disk to keep its lease database.
+# This defaults to a sane location, but if you want to change it, use
+# the line below.
+dhcp-leasefile=/var/lib/dnsmasq/dnsmasq.leases
+
+#dhcp-authoritative
+
+# Set the cachesize here.
+#cache-size=150
+
+# If you want to disable negative caching, uncomment this.
+#no-negcache
+
+# Log lots of extra information about DHCP transactions.
+#log-dhcp
+
+# Include all files in /etc/dnsmasq.d except RPM backup files
+conf-dir=/etc/dnsmasq.d,.rpmnew,.rpmsave,.rpmorig,.bak

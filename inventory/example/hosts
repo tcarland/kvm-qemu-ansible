@@ -1,0 +1,10 @@
+
+
+[nodes]
+dil[01:08]
+
+[nfs_server]
+dil01
+
+[mgmt_server]
+dim01
