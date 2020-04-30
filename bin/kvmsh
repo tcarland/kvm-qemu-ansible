@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v0.6.3"
+VERSION="v0.6.5"
 
 #--------------------------
 # defaults
@@ -29,12 +29,12 @@ disknum=0
 dryrun=1
 format="raw"  # or qcow2
 
+virt_uri="qemu:///system"
+virsh="virsh --connect $virt_uri"
 vnc="vnc,listen=0.0.0.0"
 serial="console=ttyS0,115200n8"
 mac=
 
-virt_uri="qemu:///system"
-virsh="virsh --connect $virt_uri"
 
 # map pool name to storage target
 declare -A poolmap
@@ -143,9 +143,10 @@ create_disk()
     local sz="$2"
     local type="$3"
 
-    echo "( qemu-img create -f $type $img ${sz} )"
     if [ $dryrun -gt 0 ]; then
         ( qemu-img create -f $type $img ${sz} )
+    else
+        echo "( qemu-img create -f $type $img ${sz} )"
     fi
 
     return $?
@@ -350,8 +351,6 @@ attach*)
             break
         fi
 
-        echo "( $virsh attach-disk $name $img $dev --targetbus virtio $live )"
-
         if [ $dryrun -ne 0 ]; then
             ( $virsh attach-disk $name $img $dev --targetbus virtio $live )
 
@@ -360,7 +359,10 @@ attach*)
                 echo "$PNAME Error in attach-disk" >&2
                 break
             fi
+        else
+            echo "( $virsh attach-disk $name $img $dev --targetbus virtio $live )"
         fi
+
     done
     ;;
 
@@ -405,10 +407,11 @@ create)
         fi
     fi
 
-    echo "( virt-install --connect $virt_uri ${cmdargs[@]} )"
     if [ $dryrun -gt 0 ]; then
         ( virt-install --connect $virt_uri ${cmdargs[@]} )
         rt=$?
+    else
+        echo "( virt-install --connect $virt_uri ${cmdargs[@]} )"
     fi
 
     if [ $rt -eq 0 ]; then
@@ -433,10 +436,11 @@ clone)
         exit 1
     fi
 
-    echo "( virt-clone --connect $virt_uri --original $name --name $target --file $file )"
     if [ $dryrun -gt 0 ]; then
         ( virt-clone --connect $virt_uri --original $name --name $target --file $file )
         rt=$?
+    else
+        echo "( virt-clone --connect $virt_uri --original $name --name $target --file $file )"
     fi
 
     # acquire the new MAC Addr
@@ -500,10 +504,11 @@ setmem|setmaxmem)
         live="--live"
     fi
 
-    echo "( $virsh $action $name $mem $live )"
     if [ $dryrun -gt 0 ]; then
         ( $virsh $action $name $mem $live )
         rt=$?
+    else
+        echo "( $virsh $action $name $mem $live )"
     fi
     ;;
 
@@ -523,11 +528,12 @@ setvcpus)
         live="--live"
     fi
 
-    echo "( $virsh setvcpus $name $cnt $live )"
     if [ $dryrun -gt 0 ]; then
         ( $virsh setvcpus $name $cnt --maximum $live )
         ( $virsh setvcpus $name $cnt $live )
         rt=$?
+    else
+        echo "( $virsh setvcpus $name $cnt $live )"
     fi
     ;;
 
@@ -541,7 +547,6 @@ stop|shutdown|destroy)
 
     if is_running $name; then
         echo "$PNAME stopping '$name'.."
-        echo "( $virsh destroy $name )"
         if [ $dryrun -gt 0 ]; then
             ( $virsh destroy $name )
             rt=$?
@@ -561,14 +566,12 @@ delete|undefine)
 
     if is_running $name; then
         echo "$PNAME stopping '$name'.."
-        echo "( $virsh destroy $name )"
         if [ $dryrun -gt 0 ]; then
             ( $virsh destroy $name )
             rt=$?
         fi
     fi
 
-    echo "( $virsh undefine $name )"
     if [ $dryrun -gt 0 ]; then
         ( $virsh undefine $name )
         rt=$?
@@ -592,13 +595,11 @@ pool-delete|delete-pool)
     fi
     if pool_is_active $pool; then
         echo "Stopping pool '$pool'.."
-        echo "( $virsh pool-destroy $pool )"
         if [ $dryrun -gt 0 ]; then
             ( $virsh pool-destroy $pool )
         fi
     fi
 
-    echo "( $virsh pool-undefine $pool )"
     if [ $dryrun -gt 0 ]; then
         ( $virsh pool-undefine $pool )
         rt=$?

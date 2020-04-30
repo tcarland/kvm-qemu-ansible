@@ -152,7 +152,7 @@ ONBOOT=yes
 BRIDGE=br0
 ```
 
-### Create a Base Image
+## Create a Base KVM Image
 
 The build script, `kvm-mgr.sh`, relies on a base VM image to use when building
 the VM's. This base images is used across all nodes to build the environment. By
@@ -213,7 +213,7 @@ $ clush -a --copy centos7.xml
 $ clush -a 'kvmsh define centos7.xml
 ```
 
-### Building VMs
+## Building VMs
 
  Building the environment is accomplished by providing the JSON manifest to the
 `kvm-mgr.sh` script.
@@ -230,12 +230,99 @@ The build process will clone the VM's and set VM attributes according to the
 manifest. It will then configure the static DHCP assignment and a host entry
 for DNS for all hosts in the manifest.
 
+## Starting VMs
 Once built, the VMs can be starting via the 'start' action:
 ```
 $ ./bin/kvm-mgr.sh start manifest.json
 ```
 
-The new vm's will all have the same 'centos7' hostname as a result of the
-clone process (or whatever hostname was set. The script has the 'sethostname'
-action to iterate through all VM's in a manifest and set the hostname
-accordingly.
+NOTE: The new VM's will all have the same 'centos7' hostname as a result of the
+clone process (or whatever hostname was set on the base image). The script
+provides the 'sethostname' action to iterate through all VM's in a manifest
+and set the hostname accordingly.
+```
+$ ./bin/kvm-mgr.sh sethostname manifest.json
+```
+
+## Stop vs. Destroy vs. Delete
+
+Terminology in KVM land, namely virsh from libvirt, defines the term `destroy`
+for terminating VMs and is synonymous `stop`. These actions also work
+by manifest for stopping a group of VMs across the cluster. Individual VMs
+can be stopped directly using the local 'kvmsh' script.
+```
+ssh sm-04 'kvmsh stop itc-statedb02
+```
+
+Running 'delete' is a destructive process as the VM is stopped and completely
+undefined. libvirt actions however will not remove associated volumes and
+this is true for our 'kvmsh' wrapper as well. Running `delete` from
+*kvm-mgr.sh* using a manifest, however, will automatically remove all volumes
+unless the `--keep-disks` option is provided.
+
+#### Manually deleting a single VM via kvmsh:
+```
+ $ ssh sm-05 'kvmsh delete itc-statedb03'
+ Domain itc-itc-statedb03 has been undefined
+
+ $ ssh sm-05 'kvmsh vol-list'
+ itc-statedb01-vda.img /data01/primary/itc-statedb01-vda.img
+ itc-statedb01-vdb.img /data01/primary/itc-statedb01-vdb.img
+ itc-statedb03-vda.img /data01/primary/itc-statedb03-vda.img
+ itc-statedb03-vdb.img /data01/primary/itc-statedb03-vdb.img
+
+ $ ssh sm-05 'kvmsh vol-delete itc-statedb03-vda.img'
+ $ ssh sm-05 'kvmsh vol-delete itc-statedb03-vdb.img'
+```
+
+#### Destroying VMs from Manifest
+
+Create a JSON manifest containing the VMs in question.
+Verify the manifest is accurate since we are permanently deleting.
+```
+$ cat statedb.json
+[
+    {
+        "host" : "sm-04.itc.internal",
+        "vmspecs" : [
+            {
+                "name" : "itc-statedb03",
+                "hostname" : "itc-statedb03.itc.internal",
+                "ipaddress" : "172.30.10.193",
+                "vcpus" : 2,
+                "memoryGb" : 8,
+                "maxMemoryGb" : 12,
+                "numDisks" : 1,
+                "diskSize" : 60
+            }
+        ]
+    }
+]
+```
+
+ Now delete the VMs, noting all disks are also removed.
+```
+$ ~/bin/kvm-mgr.sh delete statedb.json
+WARNING! 'delete' action will remove all VM's!
+    (Consider testing with --dryrun option)
+Are you certain you wish to continue?  [y/N] y
+( ssh sm-01 'kvmsh delete itc-statedb03' )
+Domain itc-itc-statedb03 has been undefined
+( ssh sm-01 'kvmsh vol-delete "/data01/primary/itc-statedb03-vda.img"' )
+Vol /data01/primary/itc-statedb03-vda.img deleted.
+( ssh sm-01 'kvmsh vol-delete "/data01/primary/itc-statedb03-vdb.img"' )
+Vol /data01/primary/itc-statedb03-vdb.img deleted.
+kvmsh Finished.
+```
+
+#### Delete a VM without destroying assets.  
+A given VM under management of libvirt internally stores the XML definition
+of the VM which also defines the attached volumes. The individual VM
+definitions can be exported via `kvmsh dumpxml <name> > name.xml` to save
+the definition, as well as using the manifest to perform the action across
+multiple nodes. Note the *kvm-mgr.sh* switch `--keep-disks` to
+save the volumes.
+```
+$ ./bin/kvm-mgr.sh dumpxml manifest.com
+$ ./bin/kvm-mgr.sh --keep-disks delete statedb.json
+```

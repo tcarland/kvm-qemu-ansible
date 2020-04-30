@@ -21,7 +21,7 @@
 #  ]
 #
 PNAME=${0##\/*}
-VERSION="0.4.5"
+VERSION="0.6.5"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -54,19 +54,21 @@ usage()
     printf "  -s|--srcvm <name>  : Source VM to clone. Default is '$srcvm' \n"
     printf "  -x|--srcxml <file> : Source VM XML to define, if needed. \n"
     printf "  -X|--noprompt      : Disables safety prompt on delete. \n"
-    printf "  -V|--version       : Show version info and exit \n"
+    printf "  -V|--version       : Show version info and exit. \n"
     printf "\n"
-    printf "    <action>         : Action to perform: build|start|stop|delete \n"
-    printf " <manifest.json>     : Name of JSON manifest file \n"
+    printf "   <action>          : Action to perform: build|start|stop|delete \n"
+    printf "   <manifest.json    : Name of JSON manifest file. \n"
     printf "\n"
     printf " Actions: \n"
-    printf "     build           : Build VMs defined by the manifest \n"
-    printf "                       Clones a source VM and configs DnsMasq \n"
-    printf "     start           : Start all VMs in the manifest \n"
-    printf "     stop            : Stop all VMs in the manifest \n"
-    printf "    delete           : Delete all VMs defined by the manifest \n"
-    printf "   sethostname       : Configures VM hostnames. If using non-default \n"
-    printf "                       source VM, set '-s' accordingly \n"
+    printf "   build             : Build VMs defined by the manifest. \n"
+    printf "                       Clones a source VM and configs DnsMasq. \n"
+    printf "   start             : Start all VMs in the manifest. \n"
+    printf "   stop              : Stop all VMs in the manifest. \n"
+    printf "   delete            : Delete all VMs defined by the manifest. \n"
+    printf "   dumpxml           : Runs 'dumpxml' across the cluster locally. \n"
+    printf "                       The XML is saved to $HOME on the host node. \n"
+    printf "   sethostname       : Configures VM hostnames. If not using the \n"
+    printf "                       default source VM, set '-s' accordingly \n"
     printf "\n"
 }
 
@@ -456,19 +458,10 @@ delete)
             name=$( jq -r ".[$i].vmspecs | .[$v].name" $manifest )
             volumes=()
 
-            ( ssh $host "kvmsh status $name" )
-            rt=$?
-
-            if [ $rt -eq 0 ]; then
-                echo "( ssh $host 'kvmsh stop $name' )"
-                if [ $dryrun -eq 0 ]; then
-                    ( ssh $host "kvmsh stop $name" )
-                fi
-            fi
-
             xml=$( ssh $host "kvmsh dumpxml $name" )
             volumes=$( echo $xml | xmllint --xpath '//disk/source/@file' - 2>/dev/null )
 
+            # kvmsh delete will run stop first
             echo "( ssh $host 'kvmsh delete $name' )"
             if [ $dryrun -eq 0 ]; then
                 ( ssh $host "kvmsh delete $name" )
@@ -487,6 +480,33 @@ delete)
         done
     done
     ;;
+
+# --- EXPORT
+export|dumpxml)
+    if [ -z "$manifest" ]; then
+        echo "$PNAME Error: JSON manifest not provided."
+        usage
+        exit 1
+    fi
+
+    nhosts=$( jq 'length' $manifest )
+
+    for (( i=0; i<$nhosts; i++ )); do
+        host=$( jq -r ".[$i].host" $manifest )
+        num_vms=$( jq ".[$i].vmspecs | length" $manifest )
+
+        for (( v=0; v < $num_vms; v++ )); do
+            name=$( jq -r ".[$i].vmspecs | .[$v].name" $manifest )
+
+            echo "( ssh $host 'kvmsh dumpxml $name > ${name}.xml' )"
+            if [ $dryrun -eq 0 ]; then
+                ( ssh $host "kvmsh dumpxml $name > ${name}.xml" )
+                rt=$?
+            fi
+        done
+    done
+    ;;
+
 *)
     echo "$PNAME Error: Action not recognized"
     rt=1
