@@ -362,7 +362,6 @@ attach*)
         else
             echo "( $virsh attach-disk $name $img $dev --targetbus virtio $live )"
         fi
-
     done
     ;;
 
@@ -606,7 +605,7 @@ pool-delete|delete-pool)
     ;;
 
 # -- LIST POOLS
-list-pool*|pool-list)
+pool-list|list-pool*)
     if [ ${#poolmap[@]} -eq 0 ]; then
         echo "No pools found or defined.."
         exit 0
@@ -632,7 +631,7 @@ list-vm*|list)
     ;;
 
 # --- LIST VOLUMES
-list-vol*|vol-list)
+vol-list|list-vol*)
     if [ -n "$name" ]; then
         pool="$name"
     fi

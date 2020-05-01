@@ -20,7 +20,7 @@
 #    }
 #  ]
 #
-PNAME=${0##\/*}
+PNAME=${0##*\/}
 VERSION="0.6.5"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
