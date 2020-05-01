@@ -30,7 +30,7 @@ single management node. Relying on SSH host keys, the tool takes a manifest
 describing the VM configurations and utilizes *kvmsh* per node to implement
 various actions like create, start, stop, and delete.
 
-  The inventory for KVM hosts is a JSON Manifest of the following schema:
+The inventory for KVM hosts is a JSON Manifest of the following schema:
 ```
   [
     {
@@ -73,7 +73,7 @@ clush -g lab 'rm kvmsh'
 
 #### DnsMasq
 
-  The user running the kvm-mgr.sh script should have sudo rights with NOPASSWD set.
+The user running the kvm-mgr.sh script should have sudo rights with NOPASSWD set.
 The script will automatically configure the DHCP static lease based on the
 provided manifest. The ansible already install and configures DnsMasq as a
 part of the `mgmt-server` role.
