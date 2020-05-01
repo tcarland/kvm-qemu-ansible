@@ -66,7 +66,7 @@ usage()
     printf "   stop              : Stop all VMs in the manifest. \n"
     printf "   delete            : Delete all VMs defined by the manifest. \n"
     printf "   dumpxml           : Runs 'dumpxml' across the cluster locally. \n"
-    printf "                       The XML is saved to $HOME on the host node. \n"
+    printf "                       The XML is saved to \$HOME on the host node. \n"
     printf "   sethostname       : Configures VM hostnames. If not using the \n"
     printf "                       default source VM, set '-s' accordingly \n"
     printf "\n"
@@ -77,7 +77,6 @@ version()
 {
     printf "$PNAME $VERSION\n"
 }
-
 
 ask()
 {
@@ -482,7 +481,7 @@ delete)
     ;;
 
 # --- EXPORT
-export|dumpxml)
+dumpxml)
     if [ -z "$manifest" ]; then
         echo "$PNAME Error: JSON manifest not provided."
         usage

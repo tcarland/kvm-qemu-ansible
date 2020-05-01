@@ -443,7 +443,6 @@ clone)
         echo "( virt-clone --connect $virt_uri --original $name --name $target --file $file )"
     fi
 
-    # acquire the new MAC Addr
     if [ $rt -eq 0 ]; then
         get_macaddr $target
     fi
