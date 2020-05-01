@@ -32,7 +32,7 @@ various actions like create, start, stop, and delete.
 
   The inventory for KVM hosts is a JSON Manifest of the following schema:
 ```
-[
+  [
     {
       "host" : "sm-01",
       "vmspecs" : [
@@ -48,8 +48,9 @@ various actions like create, start, stop, and delete.
         }
       ]
     }
-]
+  ]
 ```
+
 
 ### Requirements
 
@@ -69,12 +70,14 @@ clush -g lab 'sudo cp kvmsh /usr/local/bin'
 clush -g lab 'rm kvmsh'
 ```
 
+
 #### DnsMasq
 
   The user running the kvm-mgr.sh script should have sudo rights with NOPASSWD set.
 The script will automatically configure the DHCP static lease based on the
 provided manifest. The ansible already install and configures DnsMasq as a
 part of the `mgmt-server` role.
+
 
 ### Storage Pools
 
@@ -105,6 +108,7 @@ clush -B -g lab 'virsh --connect qemu:///system pool-list --all'
 clush -B -g lab 'kvmsh pool-list'
 ```
 
+
 ### Networking
 
   The *kvm-qemu* role does **not** configure the networking component of
@@ -117,7 +121,7 @@ clush -a 'sudo systemctl stop NetworkManager'
 clush -a 'sudo systemctl disable NetworkManager'
 ```
 
-Configure *ifcfg-br0* in `/etc/sysconfig/network-scripts/`
+Configure *ifcfg-br0* in `/etc/sysconfig/network-scripts/` :
 ```
 $ cat ifcfg-br0
 DEVICE=br0
@@ -152,7 +156,8 @@ ONBOOT=yes
 BRIDGE=br0
 ```
 
-## Create a Base KVM Image
+
+## Creating a Base VM Image
 
 The build script, `kvm-mgr.sh`, relies on a base VM image to use when building
 the VM's. This base images is used across all nodes to build the environment. By
@@ -167,7 +172,7 @@ When creating a new VM, the `kvmsh` script looks for the source ISO in a path
 relative to storage pool in use, we ensure the ISO is also stored in the Secondary
 pool.
 ```
-ssh sm-01 'ls -l /secondary'
+$ ssh sm-01 'ls -l /secondary'
 total 2525812
 -rw-r--r--. 1 root idps   987758592 Apr 21 15:34 CentOS-7-x86_64-Minimal-1908.iso
 ```
@@ -191,11 +196,12 @@ Another example uing a larger boot disk (default is 40G)
 $ kvmsh --pool secondary --bootsize 80 --console create centos7-80
 ```
 
-Once installed, we can add some additional base requirements that we need
+Once installed, we can add some additional requirements that are needed
 across our environment. Most importantly, creating any role or user account(s)
 with the correct SSH key(s) and configuring the resolvers to point to our
 internal DNS Server configured on the Management Node. This list provides
 these and some other items worth configuring into the base image:
+
  - set the resolvers to dnsmasq server
  - configure ssh keys
  - visudo, set NOPASSWD for the wheel or sudo group
@@ -204,21 +210,25 @@ these and some other items worth configuring into the base image:
 
 Once complete, the final step would be to stop the VM and acquire the
 XML Definition for use across all remaining nodes to define our source VM.
-
 ```
-$ kvmsh stop centos7
-$ kvmsh dumpxml centos7 > centos7.xml
+ $ kvmsh stop centos7
+ $ kvmsh dumpxml centos7 > centos7.xml
 
-$ clush -a --copy centos7.xml
-$ clush -a 'kvmsh define centos7.xml
+ # copy centos7.xml to all hosts
+ [admin-01]$ scp sm-01:centos7.xml .
+ [admin-01]$ clush -g lab --copy centos7.xml
+
+ # Now we define our base VM across all nodes
+ [admin-01]$ clush -g lab 'kvmsh define centos7.xml'
 ```
+
 
 ## Building VMs
 
  Building the environment is accomplished by providing the JSON manifest to the
 `kvm-mgr.sh` script.
 ```
-$ ./bin/kvm-mgr build manifest.json
+$ ./bin/kvm-mgr.sh build manifest.json
 ```
 This defaults to using a source VM to clone called 'centos7', but the
 script will take the source vm as a parameter (--srcvm) if desired.
@@ -230,10 +240,17 @@ The build process will clone the VM's and set VM attributes according to the
 manifest. It will then configure the static DHCP assignment and a host entry
 for DNS for all hosts in the manifest.
 
-## Starting VMs
-Once built, the VMs can be starting via the 'start' action:
+The **kvm-mgr** script should *always* be run from the admin host that is
+running DnsMasq, which is used to statically assign IP's to the VMs.
+`kvm-mgr.sh` will update dnsmasq accordingly with the lease info needed
+for statically assigning IP's to the new VMs as well as /etc/hosts.
+
+
+## Starting VMs - Setting Hostnames
+
+Once built, the VMs can be started by via the 'start' action:
 ```
-$ ./bin/kvm-mgr.sh start manifest.json
+ $ ./bin/kvm-mgr.sh start manifest.json
 ```
 
 NOTE: The new VM's will all have the same 'centos7' hostname as a result of the
@@ -241,8 +258,39 @@ clone process (or whatever hostname was set on the base image). The script
 provides the 'sethostname' action to iterate through all VM's in a manifest
 and set the hostname accordingly.
 ```
-$ ./bin/kvm-mgr.sh sethostname manifest.json
+ $ ./bin/kvm-mgr.sh sethostname manifest.json
 ```
+
+
+## Modifying existing VMs
+
+Some changes can be done on live VM's, accomplished individually
+using the `kvmsh` utility. Namely, increasing the memory for a given VM,
+which can be done on a live host up to the `MaxMemoryGB` limit defined for
+the VM. Changes to the VM may require stopping the VM to edit the
+VM. whether by *virsh* or by XML. The XML should not be edited by hand, but
+if necessary, the VM should be undefined first.
+```
+ $ kvmsh dumpxml itc-generator01 > itc-generator01.xml
+ $ vmsh undefine itc-generator01
+ #  [ edit the XML ]
+ $ kvmsh define itc-generator01.xml
+```
+
+Often, simply rebuilding the VM's is the fastest route. To do so, we would
+define a focused manifest for just the VMs to be affected. Destroy the
+current VMs, update the manifest as desired, and rebuild the VMS.
+```
+ $ cp all.json zookeepers.json
+ $ vi zookeepers.json         # reduce manifest to only the hosts in question
+ $ ./bin/kvm-mgr.sh delete zookeepers.json
+ $ vi zookeepers.json         # update values as desired
+ $ ./bin/kvm-mgr.sh -x centos7.xml build
+```
+
+Note that any adjustments to live instances that wish to be persisted should
+also be updated in the corresponding manifest.
+
 
 ## Stop vs. Destroy vs. Delete
 
@@ -251,7 +299,7 @@ for terminating VMs and is synonymous `stop`. These actions also work
 by manifest for stopping a group of VMs across the cluster. Individual VMs
 can be stopped directly using the local 'kvmsh' script.
 ```
-ssh sm-04 'kvmsh stop itc-statedb02
+ssh sm-04 'kvmsh stop itc-statedb02'
 ```
 
 Running 'delete' is a destructive process as the VM is stopped and completely
@@ -260,7 +308,12 @@ this is true for our 'kvmsh' wrapper as well. Running `delete` from
 *kvm-mgr.sh* using a manifest, however, will automatically remove all volumes
 unless the `--keep-disks` option is provided.
 
+
 #### Manually deleting a single VM via kvmsh:
+
+ If the environment is wiped or vms deleted manually, the volumes
+might persist in the storage pool without having the VM defined.
+
 ```
  $ ssh sm-05 'kvmsh delete itc-statedb03'
  Domain itc-itc-statedb03 has been undefined
@@ -273,6 +326,12 @@ unless the `--keep-disks` option is provided.
 
  $ ssh sm-05 'kvmsh vol-delete itc-statedb03-vda.img'
  $ ssh sm-05 'kvmsh vol-delete itc-statedb03-vdb.img'
+```
+
+Or in a more convenient fashion:
+```
+for x in $( kvmsh vol-list | grep $vmname | \
+    awk '{ print $1 }' ); do kvmsh vol-delete $x; done
 ```
 
 #### Destroying VMs from Manifest
