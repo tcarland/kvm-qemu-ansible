@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v0.6.5"
+VERSION="v0.6.7"
 
 #--------------------------
 # defaults
@@ -291,7 +291,7 @@ while [ $# -gt 0 ]; do
             exit 0
             ;;
         *)
-            action="$1"
+            action="${1,,}"
             shift
             name="$1"
             shift
@@ -479,6 +479,7 @@ start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|de
 
     if [ $dryrun -gt 0 ]; then
         ( $virsh $action $name )
+        rt=$?
     fi
     ;;
 

@@ -21,7 +21,7 @@
 #  ]
 #
 PNAME=${0##*\/}
-VERSION="0.6.5"
+VERSION="0.6.7"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
