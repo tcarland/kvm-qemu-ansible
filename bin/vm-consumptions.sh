@@ -1,24 +1,26 @@
 #!/usr/bin/env bash
 #
-# Determine guest vm resource totals per host 
+# Determine guest vm resource totals per host
 #
 # Timothy C. Arland <tcarland@gmail.com, tarland@trace3.com>
 #
 PNAME=${0##*\/}
 
 manifest="$1"
+hostonly="$2"
+
 totalsf=".kvm-res_totals"
 scan=0
 
 C_RED='\e[31m\e[1m'
 C_GRN='\e[32m\e[1m'
-C_YEL='\e[93m'  
+C_YEL='\e[93m'
 C_MAG='\e[95m'
 C_CYN='\e[96m'
 C_NC='\e[0m'
 
 
-if [ -z "$manifest" ]; then 
+if [ -z "$manifest" ]; then
     echo "$PNAME Error: No json manifest provided!"
     exit 1
 fi
@@ -42,7 +44,12 @@ if [ ! -e $totalsf ]; then
     done
 fi
 
-for x in $hosts; do 
+for x in $hosts; do
+    if [ -n "$hostonly" ]; then
+        if [[ $hostonly != ${x%%\.*} ]]; then
+            continue
+        fi
+    fi
     hostq="\"$x\""
     vmspec=$( jq ".[] | select(.host == $hostq)" $manifest )
 
@@ -54,7 +61,7 @@ for x in $hosts; do
 
     availcpu=$(($totalcpu - $cpu))
     availmem=$( echo - | awk "{ print $totalmem - $mem }" )
-    
+
     printf "\n${C_RED}%s ${C_NC}: \n" $x
     printf "  cpus total: ${C_CYN} $totalcpu ${C_NC} memory total: ${C_CYN} $totalmem ${C_NC} \n"
     printf "  cpus used:  ${C_YEL} $cpu ${C_NC}  memory used: ${C_YEL} $mem ${C_NC} \n"
@@ -65,4 +72,3 @@ done
 
 
 exit 0
-
