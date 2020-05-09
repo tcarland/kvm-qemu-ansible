@@ -12,10 +12,8 @@ hostonly="$2"
 totalsf=".kvm-res_totals"
 scan=0
 
-C_RED='\e[31m\e[1m'
 C_GRN='\e[32m\e[1m'
 C_YEL='\e[93m'
-C_MAG='\e[95m'
 C_CYN='\e[96m'
 C_NC='\e[0m'
 
@@ -62,7 +60,7 @@ for x in $hosts; do
     availcpu=$(($totalcpu - $cpu))
     availmem=$( echo - | awk "{ print $totalmem - $mem }" )
 
-    printf "\n${C_RED}%s ${C_NC}: \n" $x
+    printf "\n${C_CYN}%s ${C_NC}: \n" $x
     printf "  cpus total: ${C_CYN} $totalcpu ${C_NC} memory total: ${C_CYN} $totalmem ${C_NC} \n"
     printf "  cpus used:  ${C_YEL} $cpu ${C_NC}  memory used: ${C_YEL} $mem ${C_NC} \n"
     printf " ------------------------------------------------ \n"
