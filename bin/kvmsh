@@ -552,6 +552,7 @@ stop|shutdown|destroy)
         fi
     else
         echo "VM does not appear to be running.."
+        rt=1
     fi
     ;;
 
