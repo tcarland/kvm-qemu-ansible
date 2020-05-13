@@ -21,7 +21,7 @@
 #  ]
 #
 PNAME=${0##*\/}
-VERSION="0.6.7"
+VERSION="0.6.8"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -389,7 +389,8 @@ sethostname*)
             echo "( ssh $name 'sudo hostname $hostname' )"
             echo "( ssh $name \"sudo bash -c 'echo $hostname > /etc/hostname'\" )"
             if [ $dryrun -eq 0 ]; then
-                ( ssh $name "sudo hostname $hostname" >/dev/null 2>&1 )
+                ( ssh-keygen -f "${HOME}/.ssh/known_hosts" -R "$hostname" > /dev/null 2>&1 )
+                ( ssh -oStrictHostKeyChecking=accept-new $name "sudo hostname $hostname" >/dev/null 2>&1 )
                 ( ssh $name "sudo bash -c 'echo $hostname > /etc/hostname'" )
             fi
         done
