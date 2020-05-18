@@ -3,18 +3,18 @@
 #  kvmsh
 #
 #   Command-line tool for manipulating virtual machines wrapping the use
-#   of the kvm tools 'virsh', 'virt-install', and 'virt-clone'.
+#   of kvm tools 'virsh', 'virt-install', and 'virt-clone'.
 #
 #  Timothy C. Arland <tcarland@gmail.com, tarland@trace3.com>
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v0.6.7"
+VERSION="v0.6.8"
 
 #--------------------------
 # defaults
 pool="default"
-network="bridge=br0"  # bridge=virbr0 is libvirt default NAT interface
+network="bridge=br0"  # bridge=virbr0 is the libvirt default NAT interface
 ostype="linux"
 osvar="centos7.0"
 image="CentOS-7-x86_64-Minimal-1908.iso"
@@ -50,7 +50,7 @@ usage()
     printf "  -D|--disknum  <n>    : Number of disks to be attached. \n"
     printf "  -d|--disksize <xxG>  : Size of disk(s) to be attached with unit, eg. '100G'\n"
     printf "  -f|--format   <type> : VM disk type: 'qcow2|raw', Default is '$format'. \n"
-    printf "  -G|--graphics <type> : KVM Graphics type; Default is 'VNC'. \n"
+    printf "  -G|--graphics <type> : KVM Graphics type; Default is 'VNC', unless -C is set. \n"
     printf "  -h|--help            : Show usage info and exit. \n"
     printf "  -i|--image   <name>  : Name of source image (relative to storage pool).\n"
     printf "     Default is        : '$image'\n"

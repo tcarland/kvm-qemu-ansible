@@ -10,10 +10,11 @@ roles for utilizing NFS as a secondary storage pool.
 ## KVM Setup
 
   Once Ansible has been run, all hosts should be configured with a KVM
-Hypervisor and an NFS share. The ansible does not, however, configure
-any storage pools or networking on the nodes.  The following sections
-discuss configuring KVM for use across a cluster by configuring Bridged
-Networking for the nodes and Storage pools.
+Hypervisor, a network bridge, and optionally a NFS share for secondary 
+storage. The ansible does not, however, configure any storage pools or 
+networking on the nodes.  The following sections discuss configuring KVM 
+for use across a cluster by configuring Bridged Networking for the nodes 
+and Storage pools.
 
   Additionally, there are two management scripts provided for managing
 Virtual Machines across the infrastructure.
@@ -61,8 +62,8 @@ The requirements for running the tools are:
  - The 'kvmsh' utility to be distributed to all nodes and placed in the
    system path.
  - DnsMasq should be installed on the management node where 'kvm-mgr.sh' is
- run from. This is used to provide DNS configuration and Static IP
- assignments for the cluster via DHCP.
+   run from. This is used to provide DNS configuration and Static IP
+   assignments for the cluster via DHCP.
 
 ```
 clush -g lab --copy kvmsh
@@ -165,19 +166,19 @@ default, the scripts use a Centos7 ISO as source iso when creating VMs from
 scratch, but other ISO's can be provided by the `--image` command option.
 
 Since the resulting base VM will be cloned by all nodes when building VM, the
-VM should be created on the Secondary Storage pool (NFS) to make it automatically
-available to all hosts.
+VM should be created on the Secondary Storage pool (NFS) to make it available 
+to all hosts.
 
 When creating a new VM, the `kvmsh` script looks for the source ISO in a path
-relative to storage pool in use, we ensure the ISO is also stored in the Secondary
-pool.
+relative to storage pool in use, so we ensure the ISO is also stored in the 
+Secondary pool.
 ```
 $ ssh sm-01 'ls -l /secondary'
 total 2525812
 -rw-r--r--. 1 root idps   987758592 Apr 21 15:34 CentOS-7-x86_64-Minimal-1908.iso
 ```
 
-The first VM can then be created from any node and pointed to the secondary pool.
+The base VM can then be created on any node and pointed to the secondary pool.
 ```
 $ kvmsh --pool secondary --console create centos7
 ```
@@ -188,10 +189,10 @@ at boot with DHCP. Once complete, the VM will exist in our secondary pool:
 ```
 $ ls -l /secondary
 -rw-r--r--. 1 root root 42949672960 Apr 27 13:12 centos7-vda.img
--rw-r--r--. 1 root idps   987758592 Apr 21 15:34 CentOS-7-x86_64-Minimal-1908.iso
+-rw-r--r--. 1 root root   987758592 Apr 21 15:34 CentOS-7-x86_64-Minimal-1908.iso
 ```
 
-Another example uing a larger boot disk (default is 40G)
+Another example using a larger boot disk (default is 40G)
 ```
 $ kvmsh --pool secondary --bootsize 80 --console create centos7-80
 ```
@@ -267,9 +268,9 @@ and set the hostname accordingly.
 Some changes can be done on live VM's, accomplished individually
 using the `kvmsh` utility. Namely, increasing the memory for a given VM,
 which can be done on a live host up to the `MaxMemoryGB` limit defined for
-the VM. Changes to the VM may require stopping the VM to edit the
-VM. whether by *virsh* or by XML. The XML should not be edited by hand, but
-if necessary, the VM should be undefined first.
+the VM. Most other changes to the VM generally require stopping the VM first
+to edit the VM. whether by *virsh* or by XML. The XML should not be edited by 
+hand, but if absolutely necessary, the VM should be undefined first.
 ```
  $ kvmsh dumpxml itc-generator01 > itc-generator01.xml
  $ vmsh undefine itc-generator01
