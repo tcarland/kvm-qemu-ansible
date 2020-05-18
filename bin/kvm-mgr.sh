@@ -258,7 +258,6 @@ build|create)
 
             # Create VM
             echo "( ssh $host 'kvmsh --pool $pool clone $srcvm $name' )"
-            #echo "( ssh $host 'virt-sysprep -d $name --hostname $hostname' )"
             echo "( ssh $host 'kvmsh setmaxmem ${maxmem}G $name' )"
             echo "( ssh $host 'kvmsh setmem ${mem}G $name' )"
             echo "( ssh $host 'kvmsh setvcpus $vcpus $name' )"
@@ -276,7 +275,6 @@ build|create)
                     exit 1
                 fi
 
-                #( ssh $host "LIBGUESTFS_BACKEND=direct virt-sysprep -c $virt_uri -d $name --hostname $hostname" )
                 ( ssh $host "kvmsh setmaxmem ${maxmem}G $name" )
                 ( ssh $host "kvmsh setmem ${mem}G $name" )
                 ( ssh $host "kvmsh setvcpus $vcpus $name" )

@@ -22,16 +22,16 @@
     state: present
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
- - name: Configure DnsMasq
-   become: true
-   template:
-     src: 'dnsmasq.conf.j2'
-     dest: '/etc/dnsmasq.conf'
-     mode: 0644
+- name: Configure DnsMasq
+  become: true
+  template:
+    src: 'dnsmasq.conf.j2'
+    dest: '/etc/dnsmasq.conf'
+    mode: 0644
 
- - name: Enable and Start DnsMasq
-   become: true
-   service:
-     name: 'dnsmasq'
-     state: 'started'
-     enabled: 'yes'
+- name: Enable and Start DnsMasq
+  become: true
+  service:
+    name: 'dnsmasq'
+    state: 'started'
+    enabled: 'yes'
