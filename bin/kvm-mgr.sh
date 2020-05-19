@@ -8,6 +8,7 @@
 #      "vmspecs" : [
 #        {
 #          "name" : "kvmhost01",
+#          "description" : "webserver"
 #          "hostname" : "kvmhost01.chnet.internal",
 #          "ipaddress" : "10.10.5.11",
 #          "vcpus" : 2,
@@ -21,7 +22,7 @@
 #  ]
 #
 PNAME=${0##*\/}
-VERSION="0.6.8"
+VERSION="0.6.9"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"

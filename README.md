@@ -347,6 +347,7 @@ $ cat statedb.json
         "vmspecs" : [
             {
                 "name" : "itc-statedb03",
+                "description" : "StateDb (Redis) for PhyConv"
                 "hostname" : "itc-statedb03.itc.internal",
                 "ipaddress" : "172.30.10.193",
                 "vcpus" : 2,
