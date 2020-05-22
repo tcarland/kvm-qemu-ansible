@@ -1,5 +1,5 @@
 ---
-- name: Install KVM Packages (yum)
+- name: Install KVM Packages (RHEL)
   become: true
   yum:
     name: '{{ yum_kvm_packages }}'
@@ -7,7 +7,7 @@
     state: present
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Install KVM Packages (apt)
+- name: Install KVM Packages (Debian)
   become: true
   apt:
     name: '{{ apt_kvm_packages }}'
@@ -28,7 +28,7 @@
     dest: '/etc/libvirt/libvirt.conf'
     mode: '0644'
 
-- name: Enable listen_tcp in libvirt
+- name: Enable listen_tcp in libvirt (RHEL)
   become: true
   lineinfile:
     dest: '/etc/sysconfig/libvirtd'
@@ -39,7 +39,7 @@
   notify: restart_libvirtd
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Enable listen_tcp in libvirt
+- name: Enable listen_tcp in libvirt (Ubuntu)
   become: true
   lineinfile:
     dest: '/etc/default/libvirtd'
@@ -50,7 +50,7 @@
   notify: restart_libvirtd
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
-- name: Enable physical bridge br0
+- name: Enable physical bridge br0 (RHEL)
   become: true
   lineinfile:
     dest: '/etc/qemu-kvm/bridge.conf'

@@ -18,7 +18,7 @@
 - name: Install Mgmt Prerequisites (apt)
   become: true
   apt:
-    name: '{{ yum_mgmt_packages }}'
+    name: '{{ apt_mgmt_packages }}'
     state: present
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 

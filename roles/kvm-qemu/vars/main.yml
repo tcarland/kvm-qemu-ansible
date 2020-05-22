@@ -8,6 +8,7 @@ yum_kvm_packages:
  - libguestfs-tools
  - bridge-utils
  - ethtool
+ - libxml2
 
 
 apt_kvm_packages:
@@ -19,3 +20,4 @@ apt_kvm_packages:
  - libguestfs-tools
  - bridge-utils
  - ethtool
+ - libxml2

@@ -1,9 +1,17 @@
 ---
-- name: Install nfs-utils
+- name: Install nfs-utils (RHEL)
   become: true
   yum:
     name: 'nfs-utils'
     state: present
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Install nfs-utils (Debian)
+  become: true
+  apt:
+    name: 'nfs-utils'
+    state: present
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
 - name: Ensure /etc/exports exists
   become: true
