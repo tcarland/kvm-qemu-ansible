@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v0.6.9"
+VERSION="v0.7.1"
 
 #--------------------------
 # defaults

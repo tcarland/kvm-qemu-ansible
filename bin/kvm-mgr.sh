@@ -22,7 +22,7 @@
 #  ]
 #
 PNAME=${0##*\/}
-VERSION="0.6.9"
+VERSION="0.7.1"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -41,6 +41,7 @@ dryrun=0
 delete=1
 noprompt=0
 action=
+
 
 usage()
 {
@@ -254,37 +255,35 @@ build|create)
 
             if is_defined $host $name; then
                 echo " > VM '$name' already exists on host '$host', Skipping..."
-                continue
-            fi
-
-            # Create VM
-            echo "( ssh $host 'kvmsh --pool $pool clone $srcvm $name' )"
-            echo "( ssh $host 'kvmsh setmaxmem ${maxmem}G $name' )"
-            echo "( ssh $host 'kvmsh setmem ${mem}G $name' )"
-            echo "( ssh $host 'kvmsh setvcpus $vcpus $name' )"
-            if [ $ndisks -gt 0 ]; then
-                echo "( ssh $host 'kvmsh -D $ndisks -d ${dsize}G attach-disk $name' )"
-            fi
-            echo ""
-
-            if [ $dryrun -eq 0 ]; then
-                ( ssh $host "kvmsh --pool $pool clone $srcvm $name" )
-                rt=$?
-
-                if [ $rt -gt 0 ]; then
-                    echo "$PNAME Error in clone of $name" >&2
-                    exit 1
-                fi
-
-                ( ssh $host "kvmsh setmaxmem ${maxmem}G $name" )
-                ( ssh $host "kvmsh setmem ${mem}G $name" )
-                ( ssh $host "kvmsh setvcpus $vcpus $name" )
-
-                # Attach Disks
+            else
+                # Create VM
+                echo "( ssh $host 'kvmsh --pool $pool clone $srcvm $name' )"
+                echo "( ssh $host 'kvmsh setmaxmem ${maxmem}G $name' )"
+                echo "( ssh $host 'kvmsh setmem ${mem}G $name' )"
+                echo "( ssh $host 'kvmsh setvcpus $vcpus $name' )"
                 if [ $ndisks -gt 0 ]; then
-                    ( ssh $host "kvmsh -D $ndisks -d ${dsize}G attach-disk $name" )
+                    echo "( ssh $host 'kvmsh -D $ndisks -d ${dsize}G attach-disk $name' )"
                 fi
+                echo ""
 
+                if [ $dryrun -eq 0 ]; then
+                    ( ssh $host "kvmsh --pool $pool clone $srcvm $name" )
+                    rt=$?
+
+                    if [ $rt -gt 0 ]; then
+                        echo "$PNAME Error in clone of $name" >&2
+                        exit 1
+                    fi
+
+                    ( ssh $host "kvmsh setmaxmem ${maxmem}G $name" )
+                    ( ssh $host "kvmsh setmem ${mem}G $name" )
+                    ( ssh $host "kvmsh setvcpus $vcpus $name" )
+
+                    # Attach Disks
+                    if [ $ndisks -gt 0 ]; then
+                        ( ssh $host "kvmsh -D $ndisks -d ${dsize}G attach-disk $name" )
+                    fi
+                fi
             fi
 
             echo " -> Configure dnsmasq lease. "
