@@ -7,6 +7,64 @@ The Ansible doesn't configure any primary storage pools, but there are NFS
 roles for utilizing NFS as a secondary storage pool.
 
 
+## Ansible Configuration 
+
+Inventory vault file format:
+```
+kvm_ssh_ids:
+  tca:
+    ssh_id: ''
+  tdh:
+    ssh_id: ''
+```
+
+Inventory vars:
+```
+---
+kvm_users:
+ - tca
+ - tdh
+
+kvm_groups:
+ - libvirt
+ - kvm
+
+nfs_domain: 'tdh.internal'
+nfs_storage_server: 'tdh01.tdh.internal'
+nfs_storage_export: '/data01/secondary'
+nfs_storage_mountpoint: '/secondary'
+
+kvm_primary_storage: '/data01/primary'
+
+sysctl:
+  net:
+    bridge:
+      bridge_arptables: "0"
+      bridge_ip6tables: "0"
+      bridge_iptables: "0"
+    ipv4:
+      ip_forward: "1"
+      conf:
+        accept_source_route: "0"
+        rp_filter: "0"
+    ipv6:
+      conf:
+        disable_ipv6: "0"
+  vm:
+    swappiness: "1"
+
+
+dnsmasq_primary_resolver: '8.8.8.8'
+dnsmasq_secondary_resolver: '8.8.4.4'
+
+dnsmasq_kvm_domain: 'tdh.internal'
+
+dhcp_range_start: '10.10.5.130'
+dhcp_range_end: '10.10.5.250'
+dhcp_range_netmask: '255.255.255.0'
+dhcp_router_ip: '10.10.5.1'
+```
+
 ## KVM Setup
 
   Once Ansible has been run, all hosts should be configured with a KVM
