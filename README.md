@@ -3,13 +3,18 @@ kvm-qemu-ansible
 
  Ansible playbook for installing KVM-QEMU on either RHEL/Centos or Ubuntu
 Linux systems. This is intended for deploying KVM across a cluster of nodes.
-The Ansible doesn't configure any primary storage pools, but there are NFS
-roles for utilizing NFS as a secondary storage pool.
+The Ansible roles do not configure any primary storage pools, but there are NFS
+roles for utilizing NFS as a secondary storage pool. More about configuring the
+storage pools comes later in the document.
 
+  This also assumes the networking layer for the bridge network to be used by
+Virtual Machines is also configured as all VMs are intended to run with a bridged
+network across nodes. More information about configuring the host bridge network
+is provided below.
 
-## Ansible Configuration 
+## Ansible Configuration
 
-Inventory vault file format:
+Inventory vault file format contains ssh keys for users and service accounts:
 ```
 kvm_ssh_ids:
   tca:
@@ -18,7 +23,7 @@ kvm_ssh_ids:
     ssh_id: ''
 ```
 
-Inventory vars:
+Inventory vars, of note `kvm_users` must be in the kvm and libvirt groups.:
 ```
 ---
 kvm_users:
@@ -65,13 +70,15 @@ dhcp_range_netmask: '255.255.255.0'
 dhcp_router_ip: '10.10.5.1'
 ```
 
+
+
 ## KVM Setup
 
   Once Ansible has been run, all hosts should be configured with a KVM
-Hypervisor, a network bridge, and optionally a NFS share for secondary 
-storage. The ansible does not, however, configure any storage pools or 
-networking on the nodes.  The following sections discuss configuring KVM 
-for use across a cluster by configuring Bridged Networking for the nodes 
+Hypervisor, a network bridge, and optionally a NFS share for secondary
+storage. The ansible does not, however, configure any storage pools or
+networking on the nodes.  The following sections discuss configuring KVM
+for use across a cluster by configuring Bridged Networking for the nodes
 and Storage pools.
 
   Additionally, there are two management scripts provided for managing
@@ -224,11 +231,11 @@ default, the scripts use a Centos7 ISO as source iso when creating VMs from
 scratch, but other ISO's can be provided by the `--image` command option.
 
 Since the resulting base VM will be cloned by all nodes when building VM, the
-VM should be created on the Secondary Storage pool (NFS) to make it available 
+VM should be created on the Secondary Storage pool (NFS) to make it available
 to all hosts.
 
 When creating a new VM, the `kvmsh` script looks for the source ISO in a path
-relative to storage pool in use, so we ensure the ISO is also stored in the 
+relative to storage pool in use, so we ensure the ISO is also stored in the
 Secondary pool.
 ```
 $ ssh sm-01 'ls -l /secondary'
@@ -327,7 +334,7 @@ Some changes can be done on live VM's, accomplished individually
 using the `kvmsh` utility. Namely, increasing the memory for a given VM,
 which can be done on a live host up to the `MaxMemoryGB` limit defined for
 the VM. Most other changes to the VM generally require stopping the VM first
-to edit the VM. whether by *virsh* or by XML. The XML should not be edited by 
+to edit the VM. whether by *virsh* or by XML. The XML should not be edited by
 hand, but if absolutely necessary, the VM should be undefined first.
 ```
  $ kvmsh dumpxml itc-generator01 > itc-generator01.xml
