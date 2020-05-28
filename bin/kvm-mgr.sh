@@ -22,7 +22,7 @@
 #  ]
 #
 PNAME=${0##*\/}
-VERSION="0.7.1"
+VERSION="0.7.2"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -227,9 +227,12 @@ build|create)
     fi
 
     if [ $dryrun -eq 0 ]; then
-        echo " -> Stopping dnsmasq to configure leases"
-        ( sudo systemctl stop dnsmasq )
+        echo " -> Creating dnsmasq configurations"
+        #echo " -> Stopping dnsmasq to configure leases"
+        #( sudo systemctl stop dnsmasq )
         ( sudo cp $hostsfile ${hostsfile}.bak )
+        ( sudo cp $leasecfg ${leasecfg}.new )
+        ( sudo cp $leasefile ${leasefile}.new )
     fi
 
     for (( i=0; i<$nhosts; i++ )); do
@@ -297,10 +300,10 @@ build|create)
                 fi
 
                 # remove old entry from active leases and lease config
-                ( sudo sed -i'' /$ip/d $leasecfg )
-                ( sudo sed -i'' /$ip/d $leasefile )
+                ( sudo sed -i'' /$ip/d ${leasecfg}.new )
+                ( sudo sed -i'' /$ip/d ${leasefile}.new )
                 # apply new lease
-                ( sudo bash -c "printf 'dhcp-host=%s,%s \n' ${mac} ${ip} >> $leasecfg" )
+                ( sudo bash -c "printf 'dhcp-host=%s,%s \n' ${mac} ${ip} >> ${leasecfg}.new" )
 
                 # replace hosts entry
                 ( sudo sed -i'' /$ip/d $hostsfile )
@@ -312,6 +315,9 @@ build|create)
     # restart dnsmasq
     echo " -> Restarting DnsMasq"
     if [ $dryrun -eq 0 ]; then
+        ( sudo systemctl stop dnsmasq )
+        ( sudo mv ${leasecfg}.new $leasecfg )
+        ( sudo mv ${leasefile}.new $leasefile )
         ( sudo systemctl restart dnsmasq )
     fi
     ;;
@@ -389,6 +395,10 @@ sethostname*)
             if [ $dryrun -eq 0 ]; then
                 ( ssh-keygen -f "${HOME}/.ssh/known_hosts" -R "$hostname" > /dev/null 2>&1 )
                 ( ssh -oStrictHostKeyChecking=accept-new $name "sudo hostname $hostname" >/dev/null 2>&1 )
+                rt=$?
+                if [ $rt -gt 0 ]; then
+                    ( ssh -oStrictHostKeyChecking=no $name "sudo hostname $hostname" >/dev/null 2>&1 )
+                fi
                 ( ssh $name "sudo bash -c 'echo $hostname > /etc/hostname'" )
             fi
         done
@@ -469,6 +479,7 @@ delete)
             if [ $delete -eq 1 ]; then
                 for vol in $volumes; do
                     vol=$( echo $vol | awk -F= '{ print $2 }' )
+                    vol=${vol##*\/}
                     echo "( ssh $host 'kvmsh vol-delete $vol' )"
                     if [ $dryrun -eq 0 ]; then
                         ( ssh $host "kvmsh vol-delete $vol" )
