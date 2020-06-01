@@ -22,7 +22,7 @@
 #  ]
 #
 PNAME=${0##*\/}
-VERSION="0.7.2"
+VERSION="0.7.3"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -54,7 +54,7 @@ usage()
     printf "  -p|--pool  <name>  : Storage pool to use, if not '$pool'. \n"
     printf "  -n|--dryrun        : Enable DRYRUN, Nothing is executed. \n"
     printf "  -s|--srcvm <name>  : Source VM to clone. Default is '$srcvm' \n"
-    printf "  -x|--srcxml <file> : Source VM XML to define, if needed. \n"
+    printf "  -x|--srcxml <file> : Source XML to define and use as the source vm. \n"
     printf "  -X|--noprompt      : Disables safety prompt on delete. \n"
     printf "  -V|--version       : Show version info and exit. \n"
     printf "\n"
@@ -63,14 +63,16 @@ usage()
     printf "\n"
     printf " Actions: \n"
     printf "   build             : Build VMs defined by the manifest. \n"
-    printf "                       Clones a source VM and configs DnsMasq. \n"
+    printf "                       Clones a source VM and configures DnsMasq. \n"
     printf "   start             : Start all VMs in the manifest. \n"
     printf "   stop              : Stop all VMs in the manifest. \n"
     printf "   delete            : Delete all VMs defined by the manifest. \n"
     printf "   dumpxml           : Runs 'dumpxml' across the cluster locally. \n"
     printf "                       The XML is saved to \$HOME on the host node. \n"
-    printf "   sethostname       : Configures VM hostnames. If not using the \n"
-    printf "                       default source VM, set '-s' accordingly \n"
+    printf "   sethostname       : Configures VM hostnames. If not using the default source\n"
+    printf "                       VM ($srcvm), set '--srcvm' accordingly. \n"
+    printf "   setresources      : Will run setvcpus, setmem and setmaxmem for each \n"
+    printf "                       VM in the manifest. VM's must be stopped. \n"
     printf "\n"
 }
 
@@ -116,6 +118,20 @@ is_defined()
     exists=$( ssh $h "kvmsh list | grep $vm" )
 
     if [ -n "$exists" ]; then
+        return 0
+    fi
+
+    return 1
+}
+
+is_running()
+{
+    local h="$1"
+    local vm="$2"
+
+    running=$( ssh $h "kvmsh list | grep $vm | awk '{ print $3 }'" )
+
+    if [ $running == "running" ]; then 
         return 0
     fi
 
@@ -511,6 +527,43 @@ dumpxml)
             if [ $dryrun -eq 0 ]; then
                 ( ssh $host "kvmsh dumpxml $name > ${name}.xml" )
                 rt=$?
+            fi
+        done
+    done
+    ;;
+
+# --- SETRESOURCES
+setresource*)
+    if [ -z "$manifest" ]; then
+        echo "$PNAME Error: JSON manifest not provided."
+        usage
+        exit 1
+    fi
+
+    nhosts=$( jq 'length' $manifest )
+
+    for (( i=0; i<$nhosts; i++ )); do
+        host=$( jq -r ".[$i].host" $manifest )
+        num_vms=$( jq ".[$i].vmspecs | length" $manifest )
+
+        for (( v=0; v < $num_vms; v++ )); do
+            name=$( jq -r ".[$i].vmspecs | .[$v].name" $manifest )
+            vcpus=$( jq -r ".[$i].vmspecs | .[$v].vcpus" $manifest )
+            mem=$( jq -r ".[$i].vmspecs | .[$v].memoryGb" $manifest )
+            maxmem=$( jq -r ".[$i].vmspecs | .[$v].maxMemoryGb" $manifest )
+
+            if is_running $host $name; then
+                echo "Error, VM appears to be running, please stop first. Skipping host.."
+                continue
+            fi 
+
+            echo "( ssh $host 'kvmsh setvcpus $vcpus $name' )"
+            echo "( ssh $host 'kvmsh setmaxmem $maxmem $name' )"
+            echo "( ssh $host 'kvmsh setmem $mem $name' )"
+            if [ $dryrun -eq 0 ]; then 
+                ( ssh $host "kvmsh setvcpus $vcpus $name" )
+                ( ssh $host "kvmsh setmaxmem $maxmem $name" )
+                ( ssh $host "kvmsh setmem $mem $name" )
             fi
         done
     done
