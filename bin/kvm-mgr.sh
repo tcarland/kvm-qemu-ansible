@@ -243,9 +243,7 @@ build|create)
     fi
 
     if [ $dryrun -eq 0 ]; then
-        echo " -> Creating dnsmasq configurations"
-        #echo " -> Stopping dnsmasq to configure leases"
-        #( sudo systemctl stop dnsmasq )
+        echo " -> Copying dnsmasq configurations"
         ( sudo cp $hostsfile ${hostsfile}.bak )
         ( sudo cp $leasecfg ${leasecfg}.new )
         ( sudo cp $leasefile ${leasefile}.new )
@@ -256,6 +254,7 @@ build|create)
         num_vms=$( jq ".[$i].vmspecs | length" $manifest )
 
         if [ -n "$srcxml" ]; then
+            echo " -> Defining source VM.."
             echo "( ssh $host 'kvmsh define $srcxml' )"
             if [ $dryrun -eq 0 ]; then
                 ( ssh $host "kvmsh define $srcxml" )
@@ -273,9 +272,10 @@ build|create)
             dsize=$( jq -r ".[$i].vmspecs | .[$v].diskSize" $manifest )
 
             if is_defined $host $name; then
-                echo " > VM '$name' already exists on host '$host', Skipping..."
+                echo " -> VM '$name' already exists on host '$host', Skipping..."
             else
                 # Create VM
+                echo " -> Create Virtual Machine: '$name'"
                 echo "( ssh $host 'kvmsh --pool $pool clone $srcvm $name' )"
                 echo "( ssh $host 'kvmsh setmaxmem ${maxmem}G $name' )"
                 echo "( ssh $host 'kvmsh setmem ${mem}G $name' )"
