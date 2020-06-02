@@ -131,7 +131,7 @@ is_running()
 
     running=$( ssh $h "kvmsh list | grep $vm | awk '{ print $3 }'" )
 
-    if [ $running == "running" ]; then 
+    if [ $running == "running" ]; then
         return 0
     fi
 
@@ -494,7 +494,7 @@ delete)
 
             if [ $delete -eq 1 ]; then
                 for vol in $volumes; do
-                    vol=$( echo $vol | awk -F= '{ print $2 }' )
+                    vol=$( echo $vol | awk -F= '{ print $2 }' | awk -F\" '{ print $2 }' )
                     vol=${vol##*\/}
                     echo "( ssh $host 'kvmsh vol-delete $vol' )"
                     if [ $dryrun -eq 0 ]; then
@@ -555,12 +555,12 @@ setresource*)
             if is_running $host $name; then
                 echo "Error, VM appears to be running, please stop first. Skipping host.."
                 continue
-            fi 
+            fi
 
             echo "( ssh $host 'kvmsh setvcpus $vcpus $name' )"
             echo "( ssh $host 'kvmsh setmaxmem $maxmem $name' )"
             echo "( ssh $host 'kvmsh setmem $mem $name' )"
-            if [ $dryrun -eq 0 ]; then 
+            if [ $dryrun -eq 0 ]; then
                 ( ssh $host "kvmsh setvcpus $vcpus $name" )
                 ( ssh $host "kvmsh setmaxmem $maxmem $name" )
                 ( ssh $host "kvmsh setmem $mem $name" )
