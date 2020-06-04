@@ -131,7 +131,7 @@ is_running()
 
     running=$( ssh $h "kvmsh list | grep $vm | awk '{ print $3 }'" )
 
-    if [ $running == "running" ]; then
+    if [ "$running" == "running" ]; then
         return 0
     fi
 
