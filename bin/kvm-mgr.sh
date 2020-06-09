@@ -22,7 +22,7 @@
 #  ]
 #
 PNAME=${0##*\/}
-VERSION="0.7.4"
+VERSION="0.7.5"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -495,10 +495,17 @@ delete)
             if [ $delete -eq 1 ]; then
                 for vol in $volumes; do
                     vol=$( echo $vol | awk -F= '{ print $2 }' | awk -F\" '{ print $2 }' )
+                    fname="$vol"
                     vol=${vol##*\/}
                     echo "( ssh $host 'kvmsh vol-delete $vol' )"
                     if [ $dryrun -eq 0 ]; then
                         ( ssh $host "kvmsh vol-delete $vol" )
+                        rt=$?
+                        if [ $rt -ne 0 ]; then
+                            echo "Error in 'vol-delete', attempting manual cleanup.."
+                            echo "( ssh $host 'rm $fname' )"
+                            ( ssh $host "rm $fname" )
+                        fi
                     fi
                 done
             fi
