@@ -22,7 +22,7 @@
 #  ]
 #
 PNAME=${0##*\/}
-VERSION="0.7.5"
+VERSION="0.7.6"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -565,12 +565,12 @@ setresource*)
             fi
 
             echo "( ssh $host 'kvmsh setvcpus $vcpus $name' )"
-            echo "( ssh $host 'kvmsh setmaxmem $maxmem $name' )"
-            echo "( ssh $host 'kvmsh setmem $mem $name' )"
+            echo "( ssh $host 'kvmsh setmaxmem ${maxmem}G $name' )"
+            echo "( ssh $host 'kvmsh setmem ${mem}G $name' )"
             if [ $dryrun -eq 0 ]; then
                 ( ssh $host "kvmsh setvcpus $vcpus $name" )
-                ( ssh $host "kvmsh setmaxmem $maxmem $name" )
-                ( ssh $host "kvmsh setmem $mem $name" )
+                ( ssh $host "kvmsh setmaxmem ${maxmem}G $name" )
+                ( ssh $host "kvmsh setmem ${mem}G $name" )
             fi
         done
     done
