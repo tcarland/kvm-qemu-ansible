@@ -318,11 +318,11 @@ attach*)
     live="--config"
 
     if [ -z "$target" ]; then
-        echo "Error determing pool storage directory: '$pool'" >&2
+        echo "Error determining pool storage directory: '$pool'" >&2
         exit 1
     fi
     if [ -z "$name" ]; then
-        echo "$PNAME Error no vm name defined."
+        echo "$PNAME Error, no VM defined."
         usage
         exit 1
     fi
@@ -370,7 +370,7 @@ create)
     target="${poolmap[$pool]}"
 
     if [ -z "$target" ]; then
-        echo "Error determining pool storage directory for '$pool'" >&2
+        echo "$PNAME Error determining pool storage directory for '$pool'" >&2
         exit 1
     fi
 
