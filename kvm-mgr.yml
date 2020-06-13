@@ -1,7 +1,7 @@
 ---
 - name: Install Management Server role
   hosts: mgmt_server
-  gather_facts: false
+  gather_facts: true
   tags: [ 'mgmt' ]
   roles:
     - 'mgmt-server'
