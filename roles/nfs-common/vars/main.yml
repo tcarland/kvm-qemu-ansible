@@ -1,0 +1,4 @@
+---
+nfs_utils_apt:
+  - 'nfs-common'
+  - 'libnfs-utils'

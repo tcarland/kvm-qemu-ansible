@@ -9,7 +9,7 @@
 - name: Install nfs-utils (Debian)
   become: true
   apt:
-    name: 'nfs-utils'
+    name: '{{ nfs_utils_apt }}'
     state: present
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
@@ -36,3 +36,4 @@
     src: 'sysconfig-nfs'
     dest: '/etc/sysconfig/nfs'
     mode: 0644
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
