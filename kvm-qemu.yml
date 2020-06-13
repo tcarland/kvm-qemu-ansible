@@ -1,11 +1,4 @@
 ---
-- name: Install Common Host Prerequisites
-  hosts: all
-  gather_facts: true
-  tags: [ 'common' ]
-  roles:
-   - 'common'
-
 - name: Configure NFS Server
   hosts: nfs_server
   gather_facts: false
