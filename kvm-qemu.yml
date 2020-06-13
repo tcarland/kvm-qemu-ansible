@@ -1,0 +1,28 @@
+---
+- name: Install Common Host Prerequisites
+  hosts: all
+  gather_facts: true
+  tags: [ 'common' ]
+  roles:
+   - 'common'
+
+- name: Configure NFS Server
+  hosts: nfs_server
+  gather_facts: false
+  tags: [ 'nfs' ]
+  roles:
+    - 'nfs-server'
+
+- name: Configure NFS Clients
+  hosts: nodes
+  gather_facts: false
+  tags: [ 'nfs' ]
+  roles:
+    - 'nfs-client'
+
+- name: Configure KVM
+  hosts: nodes
+  gather_facts: false
+  tags: [ 'nfs' ]
+  roles:
+    - 'kvm-qemu'

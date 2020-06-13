@@ -41,3 +41,6 @@ dhcp_range_start: '10.10.5.130'
 dhcp_range_end: '10.10.5.250'
 dhcp_range_netmask: '255.255.255.0'
 dhcp_router_ip: '10.10.5.1'
+
+kvmmgr_bin: '{{ playbook_dir }}/bin/kvm-mgr.sh'
+kvmsh_bin: '{{ playbook_dir }}/bin/kvmsh'

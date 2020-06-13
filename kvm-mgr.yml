@@ -1,0 +1,19 @@
+---
+- name: Install Management Server role
+  hosts: mgmt_server
+  gather_facts: false
+  tags: [ 'mgmt' ]
+  roles:
+    - 'mgmt-server'
+
+- name: Install kvmsh to nodes
+  hosts: nodes
+  gather_facts: false
+  become: true
+  copy:
+    src: '{{ kvmsh_bin }}'
+    dest: '/usr/local/bin'
+    mode: 0750
+    owner: 'root'
+    group: 'kvm'
+  tags: [ 'nodes' ]

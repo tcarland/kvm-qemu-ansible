@@ -35,3 +35,13 @@
     name: 'dnsmasq'
     state: 'started'
     enabled: 'yes'
+
+- name: Install kvm-mgr.sh
+  become: true
+  copy:
+    src: '{{ kvmmgr_bin }}'
+    dest: '/usr/local/bin'
+    mode: 0750
+    owner: 'root'
+    group: 'kvm'
+    
