@@ -6,5 +6,8 @@ dil[01:08]
 [nfs_server]
 dil01
 
+[nfs_client]
+dil[01:08]
+
 [mgmt_server]
 dim01

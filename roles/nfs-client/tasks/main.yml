@@ -12,6 +12,7 @@
     name: 'nfs'
     state: 'started'
     enabled: 'yes'
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
 - name: Mount NFS Share
   become: true
@@ -21,5 +22,5 @@
     dump: '0'
     passno: '0'
     state: mounted
-    src: '{{ nfs_storage_server }}:{{ nfs_server_export }}'
+    src: '{{ nfs_storage_server }}:{{ nfs_storage_export }}'
     path: '{{ nfs_storage_mountpoint }}'

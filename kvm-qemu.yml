@@ -7,7 +7,7 @@
     - 'nfs-server'
 
 - name: Configure NFS Clients
-  hosts: nodes
+  hosts: nfs_client
   gather_facts: true
   tags: [ 'nfs' ]
   roles:
