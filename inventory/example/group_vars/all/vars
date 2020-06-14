@@ -5,6 +5,7 @@ kvm_users:
 
 kvm_groups:
  - libvirt
+ - libvirt-qemu
  - kvm
 
 nfs_domain: 'tdh.internal'

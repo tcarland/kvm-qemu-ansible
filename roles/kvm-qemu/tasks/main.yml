@@ -68,19 +68,19 @@
     mode: '0644'
   notify: source_sysctl
 
-- name: Add Users to libvirt group
+- name: Add Users to libvirt/kvm group
   become: true
   user:
     name: '{{ item.key }}'
     groups: [ libvirt,kvm ]
     append: yes
-  with_dict: '{{ kvm_users }}'
+  with_items: '{{ kvm_users }}'
 
 - name: Create KVM Primary Storage Pool directory
   become: true
   file:
     path: '{{ kvm_primary_storage }}'
     owner: 'root'
-    group: 'kvm_role_group'
+    group: 'kvm'
     mode: 0775
     state: directory

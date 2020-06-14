@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Determine guest vm resource totals per host
+# Determine guest vm resource totals per host for a given manifest.
 #
 # Timothy C. Arland <tcarland@gmail.com, tarland@trace3.com>
 #

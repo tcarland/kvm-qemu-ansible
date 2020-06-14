@@ -2,6 +2,7 @@
 
 yum_kvm_packages:
  - qemu-kvm
+ - qemu-kvm-tools
  - libvirt
  - virt-install
  - virt-top
@@ -12,8 +13,9 @@ yum_kvm_packages:
 
 
 apt_kvm_packages:
- - kvm-qemu
- - libvirt-bin
+ - qemu-kvm
+ - libvirt-daemon-system
+ - libvirt-client
  - libvirt-daemon-driver-storage-zfs
  - virtinst
  - virt-top

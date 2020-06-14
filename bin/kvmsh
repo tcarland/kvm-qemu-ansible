@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v0.7.6"
+VERSION="v0.7.7"
 
 #--------------------------
 # defaults
@@ -44,33 +44,34 @@ usage()
 {
     printf "\n"
     printf "Usage: $PNAME [options] <action> <name> \n"
-    printf "  -b|--bootsize <xxG>  : Size of boot disk in Gb. Default is '$bootsz'. \n"
-    printf "  -C|--console         : Use serial console, sets 'none' for --graphics \n"
-    printf "  -c|--cpus     <n>    : Number of vcpus to allocate. \n"
-    printf "  -D|--disknum  <n>    : Number of disks to be attached. \n"
-    printf "  -d|--disksize <xxG>  : Size of disk(s) to be attached with unit, eg. '100G'\n"
-    printf "  -f|--format   <type> : VM disk type: 'qcow2|raw', Default is '$format'. \n"
-    printf "  -G|--graphics <type> : KVM Graphics type; Default is 'VNC', unless -C is set. \n"
-    printf "  -h|--help            : Show usage info and exit. \n"
-    printf "  -i|--image   <name>  : Name of source image (relative to storage pool).\n"
-    printf "     Default is        : '$image'\n"
-    printf "  -n|--dryrun          : Enable DRYRUN, Nothing is executed. \n"
-    printf "  -N|--network <if>    : KVM Network, default is '$network' \n"
-    printf "  -m|--memory  <Mib>   : Memory allocation in Mb and optionally max memory.\n"
-    printf "                         eg. '--memory 1024' or '--memory $memory' \n"
-    printf "  -p|--pool    <name>  : Storage pool to use, if not '$pool'. \n"
-    printf "  -u|--uri     <uri>   : Set the KVM connect uri, default is '$virt_uri' \n"
-    printf "  -V|--version         : Show version info and exit.  \n"
+    printf "  -b|--bootsize <xxG>     : Size of boot disk in Gb. Default is '$bootsz'. \n"
+    printf "  -C|--console            : Use serial console, sets 'none' for --graphics \n"
+    printf "  -c|--cpus     <n>       : Number of vcpus to allocate. \n"
+    printf "  -D|--disknum  <n>       : Number of disks to be attached. \n"
+    printf "  -d|--disksize <xxG>     : Size of disk(s) to be attached with unit, eg. '100G'\n"
+    printf "  -f|--format   <type>    : VM disk type: 'qcow2|raw', Default is '$format'. \n"
+    printf "  -G|--graphics <type>    : KVM Graphics type; Default is 'VNC', unless -C is set. \n"
+    printf "  -h|--help               : Show usage info and exit. \n"
+    printf "  -i|--image    <name>    : Name of source image (relative to storage pool).\n"
+    printf "     Default is           : '$image'\n"
+    printf "  -n|--dryrun             : Enable DRYRUN, Nothing is executed. \n"
+    printf "  -N|--network  <if>      : KVM Network, default is '$network' \n"
+    printf "  -m|--memory   <Mib>     : Memory allocation in Mb and optionally max memory.\n"
+    printf "                            eg. '--memory 1024' or '--memory $memory' \n"
+    printf "  -p|--pool    <name>     : Storage pool to use, if not '$pool'. \n"
+    printf "  -u|--uri     <uri>      : Set the KVM connect uri, default is '$virt_uri' \n"
+    printf "  -V|--version            : Show version info and exit.  \n"
     printf " \n"
-    printf "   <action>            : VM operation to perform, see below.  \n"
-    printf "   <name>              : Name of VM on which to operate the action. \n"
+    printf "   <action>               : VM operation to perform, see below.  \n"
+    printf "   <name>                 : Name of VM on which to operate the action. \n"
     printf " \n"
     printf " Actions:  \n"
     printf "   create|delete  <name>  : Create or delete a VM (will not delete volumes)\n"
     printf "   start|stop     <name>  : Start or stop a VM \n"
+    printf "   create-pool <dir> <n>  : Creates a storage pool named <n> for a given dir\n"
     printf "   delete-pool    <name>  : Removes a pool definition (will not delete dir)\n"
-    printf "   delete-vol     <name>  : Delete a volume (will delete the disk image\n"
     printf "   attach-disk    <name>  : Attach volumes to a vm (use -D and -d options)\n"
+    printf "   delete-vol     <name>  : Delete a volume (will delete the disk image\n"
     printf "   clone <srcvm> <destvm> : Clones vm (set --pool to move storage pools)\n"
     printf "   setmem    <xb> <name>  : Set a new memory value. Default unit is Kib \n"
     printf "   setmaxmem <xb> <name>  : Set a max memory value. eg. 'setmaxmem 32G myvm' \n"
@@ -79,6 +80,7 @@ usage()
     printf "                            0=running, 1=stopped, 2=not found\n"
     printf " \n"
     printf "   pool-list              : List available pools \n"
+    printf "   pool-autostart <pool>  : Set 'autostart' for pool \n"
     printf "   vol-list  <pool>       : List volumes in pool \n"
     printf "   list                   : List all virtual machines \n"
     printf "   mac-addr  <name>       : Print HW MacAddress for the given vm \n"
@@ -220,7 +222,6 @@ chars=( {b..z} )
 nums=( {1..25} )
 maxvols=${#chars[@]}
 
-
 while [ $# -gt 0 ]; do
     case "$1" in
         -h|--help)
@@ -306,12 +307,9 @@ if [ $use_console -eq 0 ]; then
     graphics="none"
 fi
 
-
 get_pools poolmap
 
-
 case "$action" in
-
 # --- ATTACH DRIVES
 attach*)
     target="${poolmap[$pool]}"
@@ -580,15 +578,79 @@ delete|undefine)
 
 # --- DELETE VOLUMES
 vol-delete|delete-vol)
-    echo "( $virsh vol-delete $name --pool $pool )"
     if [ $dryrun -gt 0 ]; then
         ( $virsh vol-delete $name --pool $pool )
         rt=$?
+    else
+        echo "( $virsh vol-delete $name --pool $pool )"
+    fi
+    ;;
+
+# --- CREATE STORAGE POOL
+pool-create|create-pool)
+    if [ -z "$name" ]; then
+        echo "$PNAME Error, directory name not provided."
+        usage
+        exit 1
+    fi
+
+    pool="default"
+
+    if [ ${#args[@]} -gt 0 ]; then
+        pool="$args[0]"
+    fi
+
+    if [ $dryrun -gt 0 ]; then
+        ( $virsh pool-define-as $pool dir - - - - "$name" )
+
+        rt=$?
+        if [ $rt -gt 0 ]; then
+            echo "$PNAME Error in pool-define"
+            exit $rt
+        fi
+        echo " -> Pool '$pool' defined."
+
+        ( $virsh pool-build $pool )
+
+        rt=$?
+        if [ $rt -gt 0 ]; then
+            echo "$PNAME Error building pool"
+            exit $rt
+        fi
+        echo " -> Pool '$pool' built successfully."
+
+        ( $virsh pool-start $pool )
+
+        rt=$?
+        if [ $rt -gt 0 ]; then
+            echo "$PNAME Error starting pool"
+            exit $rt
+        fi
+        echo " -> Pool '$pool' started successfully."
+    else
+        echo "( $virsh pool-define-as $pool dir - - - - '$name' )"
+        echo "( $virsh pool-build $pool )"
+        echo "( $virsh pool-start $pool )"
+    fi
+    ;;
+
+# --- SET POOL AUTOSTART
+pool-autostart)
+    if [ -z "$name" ]; then
+        echo "$PNAME Error, directory name not provided."
+        usage
+        exit 1
+    fi
+
+    if [ $dryrun -gt 0 ]; then
+        ( $virsh pool-autostart $name )
+    else
+        echo "( $virsh pool-autostart $name )"
     fi
     ;;
 
 # --- DELETE POOLS
-# avoiding pool-delete destructiveness
+# this delete avoids pool-delete destructiveness by only undefining
 pool-delete|delete-pool)
     if [ -n "$name" ]; then
         pool="$name"
@@ -609,7 +671,7 @@ pool-delete|delete-pool)
 # -- LIST POOLS
 pool-list|list-pool*)
     if [ ${#poolmap[@]} -eq 0 ]; then
-        echo "No pools found or defined.."
+        echo "$PNAME: No pools found or defined.."
         exit 0
     fi
 
@@ -642,7 +704,7 @@ vol-list|list-vol*)
     ;;
 
 *)
-    echo "Action not recognized"
+    echo "$PNAME Action missing or not recognized."
     usage
     ;;
 esac

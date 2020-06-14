@@ -1,10 +1,9 @@
 
-
 [nodes]
 dil[01:08]
 
 [nfs_server]
-dil01
+dis01
 
 [nfs_client]
 dil[01:08]
