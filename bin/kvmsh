@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v0.7.7"
+VERSION="v0.7.8"
 
 #--------------------------
 # defaults
@@ -596,8 +596,8 @@ pool-create|create-pool)
 
     pool="default"
 
-    if [ ${#args[@]} -gt 0 ]; then
-        pool="$args[0]"
+    if [ ${#args} -gt 0 ]; then
+        pool="${args[0]}"
     fi
 
     if [ $dryrun -gt 0 ]; then
