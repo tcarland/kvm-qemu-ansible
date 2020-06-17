@@ -9,11 +9,12 @@
 - name: Install kvmsh to nodes
   hosts: nodes
   gather_facts: false
-  become: true
-  copy:
-    src: '{{ kvmsh_bin }}'
-    dest: '/usr/local/bin'
-    mode: 0750
-    owner: 'root'
-    group: 'kvm'
-  tags: [ 'nodes' ]
+  tasks:
+  - name: Install kvmsh..
+    become: true
+    copy:
+      src: '{{ kvmsh_bin }}'
+      dest: '/usr/local/bin'
+      mode: 0750
+      owner: 'root'
+      group: 'kvm'
