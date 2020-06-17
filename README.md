@@ -118,7 +118,7 @@ The inventory for KVM hosts is a JSON Manifest of the following schema:
 ```
 
 
-### Requirements
+## Requirements
 
 The requirements for running the tools are:
  - A management node (like the ansible server used to deploy) for running
@@ -137,15 +137,15 @@ clush -g lab 'rm kvmsh'
 ```
 
 
-#### DnsMasq
+## DnsMasq
 
 The user running the kvm-mgr.sh script should have sudo rights with NOPASSWD set.
 The script will automatically configure the DHCP static lease based on the
-provided manifest. The ansible already install and configures DnsMasq as a
+provided manifest. The ansible already installs and configures DnsMasq as a
 part of the `mgmt-server` role.
 
 
-### Storage Pools
+## Storage Pools
 
   For a first time install, we must define our Storage Pools used to store
 VM and disk images. We use two storage pools, a primary and a secondary. The
@@ -188,7 +188,7 @@ clush -B -g lab 'virsh --connect qemu:///system pool-list --all'
 ```
 
 
-### Networking
+## Networking
 
   The *kvm-qemu* role does **not** configure the networking component of
 setting up the host bridge `br0`. This should be done ahead of time, carefully
@@ -388,7 +388,7 @@ this is true for our 'kvmsh' wrapper as well. Running `delete` from
 unless the `--keep-disks` option is provided.
 
 
-#### Manually deleting a single VM via kvmsh:
+### Manually deleting a VM via kvmsh:
 
  If the environment is wiped or vms deleted manually, the volumes
 might persist in the storage pool without having the VM defined.
@@ -413,7 +413,7 @@ for x in $( kvmsh vol-list | grep $vmname | \
     awk '{ print $1 }' ); do kvmsh vol-delete $x; done
 ```
 
-#### Destroying VMs from Manifest
+### Destroying VMs from Manifest
 
 Create a JSON manifest containing the VMs in question.
 Verify the manifest is accurate since we are permanently deleting.
@@ -454,7 +454,7 @@ Vol /data01/primary/itc-statedb03-vdb.img deleted.
 kvmsh Finished.
 ```
 
-#### Delete a VM without destroying assets.  
+### Delete a VM without destroying assets.  
 A given VM under management of libvirt internally stores the XML definition
 of the VM which also defines the attached volumes. The individual VM
 definitions can be exported via `kvmsh dumpxml <name> > name.xml` to save
@@ -465,3 +465,41 @@ save the volumes.
 $ ./bin/kvm-mgr.sh dumpxml manifest.com
 $ ./bin/kvm-mgr.sh --keep-disks delete statedb.json
 ```
+
+### Validate Host Resources
+
+The `vm-consumption.sh` script will provide the resource consumptions per node.
+The input parameter is a JSON manifest file.
+```
+$ ./bin/vm-consumptions.sh ~/kvm-manifest.json
+
+sm-01 :
+  cpus total:  96  memory total:  512
+  cpus used:   12   memory used:  96
+ ------------------------------------------------
+  cpus avail:  84  memory avail:  416
+
+sm-02 :
+  cpus total:  96  memory total:  512
+  cpus used:   12   memory used:  96
+ ------------------------------------------------
+  cpus avail:  84  memory avail:  416
+
+sm-03 :
+  cpus total:  96  memory total:  512
+  cpus used:   30   memory used:  90
+ ------------------------------------------------
+  cpus avail:  66  memory avail:  422
+
+sm-04 :
+  cpus total:  96  memory total:  512
+  cpus used:   40   memory used:  122
+ ------------------------------------------------
+  cpus avail:  56  memory avail:  390
+
+sm-05 :
+  cpus total:  96  memory total:  512
+  cpus used:   32   memory used:  100
+ ------------------------------------------------
+  cpus avail:  64  memory avail:  412
+ ```
