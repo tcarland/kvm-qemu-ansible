@@ -147,31 +147,44 @@ part of the `mgmt-server` role.
 
 ### Storage Pools
 
-  For a first time install, we must define our Storage Pools. We want the VM's
-to run from local disk, but we also define a NFS share as our *Secondary*
-storage:
+  For a first time install, we must define our Storage Pools used to store
+VM and disk images. We use two storage pools, a primary and a secondary. The
+primary storage pool is intended for local, direct-attached storage for VMs
+running on that given node. The optional secondary storage would be a NFS Share
+for storing our source images, cloned VMs, or snapshots, etc.
+
+Create the primary storage pool:
 ```
-# default pool is our local, primary storage pool
-clush -B -g lab 'virsh --connect qemu:///system pool-define-as default dir - - - - "/data01/primary"'
+# default pool is our local, primary storage pool.
+#  kvmsh will create, build, and start the pool
+clush -B -g lab 'kvmsh create-pool /data01/primary default'
+clush -B -g lab 'kvmsh pool-autostart default'
 
-# secondary storage pool is our nfs share
-clush -B -g lab 'virsh --connect qemu:///system pool-define-as secondary dir - - - - "/secondary"'
+# the virsh equivalent:
+#clush -B -g lab 'virsh --connect qemu:///system pool-define-as default dir - - - - "/data01/primary"'
+#clush -B -g lab 'virsh --connect qemu:///system pool-build default'
+#clush -B -g lab 'virsh --connect qemu:///system pool-start default'
+#clush -B -g lab 'virsh --connect qemu:///system pool-autostart default'
+```
 
-# build pools
-clush -B -g lab 'virsh --connect qemu:///system pool-build default'
-clush -B -g lab 'virsh --connect qemu:///system pool-build secondary'
+If the NFS Server role was deployed and, for example, the share is available as
+'/secondary', we would add the storage-pool same as above.
+```
+clush -B -g lab 'kvmsh create-pool /secondary secondary'
 
-# start pools :  pools may have already started (if dir already exists)
-clush -B -g lab 'virsh --connect qemu:///system pool-start default'
-clush -B -g lab 'virsh --connect qemu:///system pool-start secondary'
 
-# set autostart on primary 'default' pool
-clush -B -g lab 'virsh --connect qemu:///system pool-autostart default'
+# the virsh equivalent
+#clush -B -g lab 'virsh --connect qemu:///system pool-define-as secondary dir - - - - "/secondary"'
+#clush -B -g lab 'virsh --connect qemu:///system pool-build secondary'
+#clush -B -g lab 'virsh --connect qemu:///system pool-start secondary'
+```
 
-# show results
-clush -B -g lab 'virsh --connect qemu:///system pool-list --all'
-# or using our kvmsh tool
+Verify the pools via pool-list:
+```
 clush -B -g lab 'kvmsh pool-list'
+
+# virsh equivalent command
+clush -B -g lab 'virsh --connect qemu:///system pool-list --all'
 ```
 
 
