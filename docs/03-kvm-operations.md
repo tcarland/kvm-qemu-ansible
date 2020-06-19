@@ -397,3 +397,45 @@ sm-05 :
  ------------------------------------------------
   cpus avail:  64  memory avail:  412
  ```
+
+
+## Migrating VMs between Hosts Manually (Offline mode)
+
+Live VM Migration is possible with libvirt and KVM, but not yet covered by
+this document. The following describes how to migrate VM's offline.  
+
+- Of course, offline migration implies the VM should be stopped first.
+- This project configures and relies on primary storage being the same path
+  on all nodes, which makes moving VM's easier as little to no change to the
+  VM Specification is needed.
+
+Steps to Migrate.
+
+1. Save the VM Specification.
+```
+kvmsh dumpxml vmname > vmname.xml
+```
+
+2. Copy vm disks to primary storage on alternate host.
+
+3. Copy the xml and define the new vm.
+```
+kvmsh define vmname.xml
+```
+
+4. Remove the VM specification from the original host
+```
+kvmsh delete vmname.xml
+```
+
+5. Remove volumes from original host
+```
+kvmsh vol-delete volname.img
+```
+
+6. Start the VM on the new host
+```
+kvmsh start vmname
+```
+
+Lastly be sure to update the VM Manifest accordingly.
