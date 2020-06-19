@@ -7,7 +7,7 @@
     - 'mgmt-server'
 
 - name: Install kvmsh to nodes
-  hosts: nodes
+  hosts: kvm_nodes
   gather_facts: false
   tasks:
   - name: Install kvmsh..

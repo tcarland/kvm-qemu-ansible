@@ -14,7 +14,7 @@
     - 'nfs-client'
 
 - name: Configure KVM
-  hosts: nodes
+  hosts: kvm_nodes
   gather_facts: true
   tags: [ 'nfs' ]
   roles:

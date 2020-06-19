@@ -15,24 +15,6 @@ nfs_storage_mountpoint: '/secondary'
 
 kvm_primary_storage: '/data01/primary'
 
-sysctl:
-  net:
-    bridge:
-      bridge_arptables: "0"
-      bridge_ip6tables: "0"
-      bridge_iptables: "0"
-    ipv4:
-      ip_forward: "1"
-      conf:
-        accept_source_route: "0"
-        rp_filter: "0"
-    ipv6:
-      conf:
-        disable_ipv6: "0"
-  vm:
-    swappiness: "1"
-
-
 dnsmasq_primary_resolver: '8.8.8.8'
 dnsmasq_secondary_resolver: '8.8.4.4'
 
