@@ -1,5 +1,5 @@
-Initial Setup Guide
-===================
+Prerequisites
+===============
 
 
 A KVM Cluster consists a set of nodes with VT-d virtualization extensions
@@ -18,32 +18,31 @@ lscpu | grep vmx
 
 ## Configuring Storage
 
-    The Ansible configuration provides two storage options to our cluster.
+  The Ansible configuration provides two storage options to our cluster.
 The first is the *Primary* storage pool used to store VM's local to a given
 node. Ideally we make use of local attached disks in a RAID10 or RAID5
 configuration. Technically, any form of underlying storage can be used, but as
 these are 'node-local' VMs, using local storage is preferred for performance.
 The primary storage pool is used as the *default* storage pool for creating VM's.
 
-    Additionally, an optional *secondary* storage can be configured as a NFS
+  Additionally, an optional *secondary* storage can be configured as a NFS
 mount shared across all nodes that would be used to store source VMs, snapshots
 and/or clones. The pattern provided utilizes a set 'golden' images to act as
 source vm's which is discussed later.  
 
-    The provided Ansible will configure the nfs_server and mounts accordingly,
+  The provided Ansible will configure the nfs_server and mounts accordingly,
 but relies on the system storage devices to be already exist. The default
 example uses a local data volume mount for all nodes  of */data01* making
 */data01/primary* the location of our default storage pool. It is important
 that the same path is used across all nodes, which is also deployed by Ansible.
 
-    Again, these volumes should already exist and be mounted to the nodes prior
+  Again, these volumes should already exist and be mounted to the nodes prior
 to running Ansible.
-
 
 
 ## Networking
 
-   Networking in the cluster uses bridged networking for exposing all
+  Networking in the cluster uses bridged networking for exposing all
 configured VMs on the local host network.  The management server provides both
 DHCP static assignment of VM IPs and DNS, discussed in a later section.  As a
 result all nodes should use management server for DNS.  Configuring the bridge

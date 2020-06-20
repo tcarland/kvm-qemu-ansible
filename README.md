@@ -9,6 +9,11 @@ storage pool.
 
   The networking layer for a bridge network to be used by Virtual Machines is
 also a prerequisite.  Both of these topics are discussed in the first
-document:
+document, followed by deployment and operational guides.
 
-docs/00-initial-setup-guide.md  [docs/00-initial-setup-guide.md]
+ - [01-prerequisites.md](docs/01-prerequisites.md)
+
+ - [02-kvm-ansible.md](docs/02-kvm-ansible.md)
+
+ - [03-kvm-operations.md](docs/03-kvm-operations.md)
+f

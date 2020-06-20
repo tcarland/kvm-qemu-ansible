@@ -356,15 +356,12 @@ $ ./bin/vm-consumptions.sh <manifest.json>
 
 #### Create a Consolidated Manifest
 
-The `mergeAllManifests.sh` script is used to consolidate all the json manifests
-under `~/manifests` into one for use with `vm-consumption.sh`.
+The `mergeAllManifests.sh` script is used to consolidate all JSON manifests,
+under `~/manifests` by default, into one for use with `vm-consumptions.sh`.
 ```
-~/bin/mergeAllManifests.sh
-cp manifest.json ~/kvm-manifest.json
-```
+$ ~/bin/mergeAllManifests.sh
+$ cp manifest.json ~/kvm-manifest.json
 
-Then run `vm-consumption.sh`, here is an example:
-```
 $ ./bin/vm-consumptions.sh ~/kvm-manifest.json
 
 sm-01 :
