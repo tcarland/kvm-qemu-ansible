@@ -119,6 +119,8 @@ is_running()
     state=$( $virsh list | grep $vm | awk '{ print $3 }' )
     if [ "$state" == "running" ]; then
         return 0
+    elif [ -z "$state" ]; then
+        return 2
     fi
     return 1
 }
