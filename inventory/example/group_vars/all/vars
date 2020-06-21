@@ -15,10 +15,9 @@ nfs_storage_mountpoint: '/secondary'
 
 kvm_primary_storage: '/data01/primary'
 
+dnsmasq_kvm_domain: 'tdh.internal'
 dnsmasq_primary_resolver: '8.8.8.8'
 dnsmasq_secondary_resolver: '8.8.4.4'
-
-dnsmasq_kvm_domain: 'tdh.internal'
 
 dhcp_range_start: '10.10.5.130'
 dhcp_range_end: '10.10.5.250'

@@ -60,8 +60,8 @@
 - name: Add Users to libvirt/kvm group
   become: true
   user:
-    name: '{{ item.key }}'
-    groups: [ libvirt,kvm ]
+    name: '{{ item }}'
+    groups: '{{ kvm_groups }}'
     append: yes
   with_items: '{{ kvm_users }}'
 
