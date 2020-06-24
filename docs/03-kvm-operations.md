@@ -67,7 +67,7 @@ clush -g lab 'rm kvmsh'
 
 The user running the kvm-mgr.sh script should have sudo rights with NOPASSWD set.
 The script will automatically configure the DHCP static lease based on the
-provided manifest.
+provided manifest on build.
 
 
 ## Storage Pools
