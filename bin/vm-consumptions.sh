@@ -29,7 +29,7 @@ hosts=$( jq -r '.[] | .host' $manifest )
 if [ ! -e $totalsf ]; then
     for x in $hosts; do
        echo " -> Obtaining stats from $x"
-       #totalcpu=$(ssh $x "lscpu -e=cpu -J | jq -r '.cpus | length'") # newer versions of linux-util only
+       #totalcpu=$(ssh $x "lscpu -e=cpu -J | jq -r '.cpus | length'") # newer versions of linux-util only >=rhel8
        totalcpu=$(ssh $x "lscpu -e=cpu | tail -1")
        totalcpu=$(($totalcpu + 1))
        totalmem=$(ssh $x "lsmem --summary=only" | \
