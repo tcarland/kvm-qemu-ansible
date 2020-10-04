@@ -57,10 +57,10 @@ system_ssh_ids:
     ssh_id: ''
 ```
 
-This file is stored encrypted (via ansible-vault *encrypt* <file>) in the
+This file is stored encrypted via `ansible-vault encrypt $file` in the
 inventory path of **inventory/$env/group_vars/all/vault**.
 
-### Inventory Host Groups
+## Inventory Host Groups
 
 The inventory for hosts falls into 4 groups, *mgmt_server*, *kvm_nodes*
 (the KVM cluster nodes), and optional *nfs_server* and *nfs_client* groups for
@@ -91,15 +91,15 @@ dim01
   will run a KVM Hypervisor. An additional host group of `nfs_server` will
   create the NFS share for use as a secondary storage pool.
 
-  **mgmt-server**: Installs our kvm management tools and prerequisites in
+- **mgmt-server**: Installs our kvm management tools and prerequisites in
   addition to *dnsmasq*.
 
-  **nfs-common**: Installs NFS requirements common to both server and client.
+- **nfs-common**: Installs NFS requirements common to both server and client.
 
-  **nfs-server**: Creates the secondary storage NFS mount and configures
+- **nfs-server**: Creates the secondary storage NFS mount and configures
   the NFS Server to serve the mount.
 
-  **nfs-client**: Configures client nodes for mounting the NFS secondary
+- **nfs-client**: Configures client nodes for mounting the NFS secondary
   storage.
 
 

@@ -24,44 +24,43 @@ various actions like create, start, stop, and delete.
 
 The inventory for KVM hosts is a JSON Manifest of the following schema:
 ```
-  [
+[
     {
-      "host" : "sm-01",
-      "vmspecs" : [
-        {
-          "name" : "kvmhost01",
-          "hostname" : "kvmhost01.itc.internal",
-          "ipaddress" : "173.30.5.11",
-          "vcpus" : 2,
-          "memoryGb" : 4,
-          "maxMemoryGb" : 8,
-          "numDisks": 0,
-          "diskSize" : 0
-        }
-      ]
+        "host" : "t01",
+        "vmspecs" : [
+          {
+              "name" : "tdh-m01",
+              "hostname" : "tdh-m01.tdh.internal",
+              "ipaddress" : "173.30.5.11",
+              "vcpus" : 2,
+              "memoryGb" : 4,
+              "maxMemoryGb" : 8,
+              "numDisks": 0,
+              "diskSize" : 0
+          }
+        ]
     }
-  ]
+]
 ```
 
 
 ## Requirements for running scripts
 
 The requirements for running the tools are:
- - A management node (like the Ansible server used to deploy) for running
-   *kvm-mgr.sh* using SSH Host Keys.
- - `clustershell` for running 'kvmsh' across nodes is highly recommended.
+ - A management node (like an Ansible server) for running *kvm-mgr.sh* using 
+   SSH Host Keys.
+ - `clustershell` for running 'kvmsh' across nodes is not directly required
+   but is very useful and recommended.
  - The 'kvmsh' utility to be distributed to all nodes and placed in the
    system path.
- - DnsMasq should be installed on the management node where 'kvm-mgr.sh' is
-   run from. This is used to provide DNS configuration and Static IP
-   assignments for the cluster via DHCP.
-
-```
-clush -g lab --copy kvmsh
-clush -g lab 'sudo cp kvmsh /usr/local/bin'
-clush -g lab 'rm kvmsh'
-```
-
+    ```
+    clush -g lab --copy kvmsh
+    clush -g lab 'sudo cp kvmsh /usr/local/bin'
+    clush -g lab 'rm kvmsh'
+    ```
+ - *DnsMasq* should be installed on the management node where 'kvm-mgr.sh' is
+   run from. This is used to provide DNS configuration and Static IP assignments 
+   for the cluster via DHCP.
 
 ## DnsMasq
 
@@ -69,67 +68,66 @@ The user running the kvm-mgr.sh script should have sudo rights with NOPASSWD set
 The script will automatically configure the DHCP static lease based on the
 provided manifest on build.
 
-
 ## Storage Pools
 
   For a first time install, we must define our Storage Pools used to store
-VM and disk images. We use two storage pools, a primary and a secondary. The
-primary storage pool is intended for local, direct-attached storage for VMs
-running on that given node. The optional secondary storage would be a NFS Share
-for storing our source images, cloned VMs, or snapshots, etc.
+VM and disk images. Ideally, two storage pools are utilized, a primary storage
+pool and a secondary pool. The primary storage pool is intended for local, 
+direct-attached storage for hosting VM images running on that given node. 
+The (optional) secondary storage would be a NFS Share for storing source images, 
+cloned VMs, or snapshots, etc.
 
-Create the primary storage pool:
-```
-# default pool is our local, primary storage pool.
-#  kvmsh will create, build, and start the pool
-clush -B -g lab 'kvmsh create-pool /data01/primary default'
-clush -B -g lab 'kvmsh pool-autostart default'
-```
+- Creating the primary storage pool. Note the storage pool path should be made 
+consistent across all nodes.
+    ```
+    # default pool is our local, primary storage pool.
+    #  kvmsh will create, build, and start the pool
+    clush -B -g lab 'kvmsh create-pool /data01/primary default'
+    clush -B -g lab 'kvmsh pool-autostart default'
+    ```
+    For reference purposes, the following is the `virsh` equivalent of the above
+    commands:
+    ```
+    clush -B -g lab 'virsh --connect qemu:///system pool-define-as default dir - - - - "/data01/primary"'
+    clush -B -g lab 'virsh --connect qemu:///system pool-build default'
+    clush -B -g lab 'virsh --connect qemu:///system pool-start default'
+    clush -B -g lab 'virsh --connect qemu:///system pool-autostart default'
+    ```
 
-For reference purposes, the following is the `virsh` equivalent of the above
-commands:
-```
-clush -B -g lab 'virsh --connect qemu:///system pool-define-as default dir - - - - "/data01/primary"'
-clush -B -g lab 'virsh --connect qemu:///system pool-build default'
-clush -B -g lab 'virsh --connect qemu:///system pool-start default'
-clush -B -g lab 'virsh --connect qemu:///system pool-autostart default'
-```
-
-If the NFS Server role was deployed and, for example, the share is available as
+- If the NFS Server role was deployed and, for example, the share is available as
 '/secondary', we would add the storage-pool same as above.
-```
-clush -B -g lab 'kvmsh create-pool /secondary secondary'
-```
+    ```
+    clush -B -g lab 'kvmsh create-pool /secondary secondary'
+    ```
+    Again, the virsh equivalent to above:
+    ```
+    clush -B -g lab 'virsh --connect qemu:///system pool-define-as secondary dir - - - - "/secondary"'
+    clush -B -g lab 'virsh --connect qemu:///system pool-build secondary'
+    clush -B -g lab 'virsh --connect qemu:///system pool-start secondary'
+    ```
 
-Again, the virsh equivalent to above:
-```
-clush -B -g lab 'virsh --connect qemu:///system pool-define-as secondary dir - - - - "/secondary"'
-clush -B -g lab 'virsh --connect qemu:///system pool-build secondary'
-clush -B -g lab 'virsh --connect qemu:///system pool-start secondary'
-```
+- Verify the pools via pool-list:
+    ```
+    clush -B -g lab 'kvmsh pool-list'
 
-Verify the pools via pool-list:
-```
-clush -B -g lab 'kvmsh pool-list'
-
-# virsh equivalent command
-clush -B -g lab 'virsh --connect qemu:///system pool-list --all'
-```
+    # virsh equivalent command
+    clush -B -g lab 'virsh --connect qemu:///system pool-list --all'
+    ```
 
 ## Creating a Base VM Image
 
-  The build script, `kvm-mgr.sh`, relies on a base VM image to use when building
+  The managment script, `kvm-mgr.sh`, relies on a base VM image when building
 the VM's. This base images is used across all nodes to build the environment. By
 default, the scripts use a Centos7 ISO as source iso when creating VMs from
 scratch, but other ISO's can be provided by the `--image` command option.
 
   Since the resulting base VM will be cloned by all nodes when building VM, the
-VM should be created on the Secondary Storage pool (NFS) to make it available
-to all hosts.
+VM should be created on the Secondary Storage pool (NFS) to make it immediately 
+available to all hosts.
 
   When creating a new VM, the `kvmsh` script looks for the source ISO in a path
-relative to storage pool in use, so we ensure the ISO is also stored in the
-Secondary pool.
+relative to the storage pool in use, so we ensure the ISO is also stored in the
+same storage pool.
 ```
 $ ssh sm-01 'ls -l /secondary'
 total 2525812
@@ -161,11 +159,12 @@ with the correct SSH key(s) and configuring the resolvers to point to our
 internal DNS Server, which is the Management Node. This list provides
 this and some other items worth configuring into the base image:
 
- - set the resolvers to dnsmasq server
- - configure ssh keys
- - visudo, set NOPASSWD for the wheel or sudo group
- - disable firewalld if desired.
- - disable selinux if desired
+ - Set the resolvers to the DnsMasq server.
+ - Configure ssh keys for accounts as needed.
+ - Set NOPASSWD (visudo) for the wheel or sudo group
+ - Disable firewalld if desired.
+ - Disable selinux if desired.
+ - Disable NetworkManager if desired.
 
 Once complete, the final step would be to stop the VM and acquire the
 XML Definition for use across all remaining nodes to define our source VM.
@@ -181,11 +180,10 @@ XML Definition for use across all remaining nodes to define our source VM.
  [admin-01]$ clush -g lab 'kvmsh define centos7.xml'
 ```
 
-
 ## Building VMs
 
- Building the environment is accomplished by providing the JSON manifest to the
-`kvm-mgr.sh` script.
+  Building the environment is accomplished by providing the JSON manifest 
+to the `kvm-mgr.sh` script.
 ```
 $ ./bin/kvm-mgr.sh build manifest.json
 ```
@@ -200,10 +198,9 @@ manifest. It will then configure the static DHCP assignment and a host entry
 for DNS for all hosts in the manifest.
 
 The **kvm-mgr** script should *always* be run from the admin host that is
-running DnsMasq, which is used to statically assign IP's to the VMs.
+running *DnsMasq*, which is used to statically assign IP's to the VMs.
 `kvm-mgr.sh` will update dnsmasq accordingly with the lease info needed
 for statically assigning IP's to the new VMs as well as /etc/hosts.
-
 
 ## Starting VMs - Setting Hostnames
 
@@ -220,7 +217,6 @@ and set the hostname accordingly.
  $ ./bin/kvm-mgr.sh sethostnames manifest.json
 ```
 
-
 ## Modifying existing VMs
 
 Some changes can be done on live VM's, accomplished individually
@@ -230,10 +226,10 @@ the VM. Most other changes to the VM generally require stopping the VM first
 to edit the VM. whether by *virsh* or by XML. The XML should not be edited by
 hand, but if absolutely necessary, the VM should be undefined first.
 ```
- $ kvmsh dumpxml itc-generator01 > itc-generator01.xml
- $ vmsh undefine itc-generator01
+ $ kvmsh dumpxml tdh-m01 > tdh-m01.xml
+ $ vmsh undefine tdh-m01
  #  [ edit the XML ]
- $ kvmsh define itc-generator01.xml
+ $ kvmsh define tdh-m01.xml
 ```
 
 Often, simply rebuilding the VM's is the fastest route. To do so, we would
@@ -254,11 +250,11 @@ also be updated in the corresponding manifest.
 ## Stop vs. Destroy vs. Delete
 
 Terminology in KVM land, namely virsh from libvirt, defines the term `destroy`
-for terminating VMs and is synonymous `stop`. These actions also work
-by manifest for stopping a group of VMs across the cluster. Individual VMs
+for terminating VMs and is synonymous to `stop`. These actions also work
+via the manifest for stopping a group of VMs across the cluster. Individual VMs
 can be stopped directly using the local 'kvmsh' script.
 ```
-ssh sm-04 'kvmsh stop itc-statedb02'
+ssh sm-04 'kvmsh stop tdh-m01'
 ```
 
 Running 'delete' is a destructive process as the VM is stopped and completely
@@ -267,46 +263,46 @@ this is true for our 'kvmsh' wrapper as well. Running `delete` from
 *kvm-mgr.sh* using a manifest, however, will automatically remove all volumes
 unless the `--keep-disks` option is provided.
 
-
-### Manually deleting a VM via kvmsh:
+## Manually deleting a VM via kvmsh:
 
  If the environment is wiped or vms deleted manually, the volumes
 might persist in the storage pool without having the VM defined.
 
 ```
- $ ssh sm-05 'kvmsh delete itc-statedb03'
- Domain itc-itc-statedb03 has been undefined
+ $ ssh t05 'kvmsh delete tdh-d03'
+ Domain tdh-d03 has been undefined
 
- $ ssh sm-05 'kvmsh vol-list'
- itc-statedb01-vda.img /data01/primary/itc-statedb01-vda.img
- itc-statedb01-vdb.img /data01/primary/itc-statedb01-vdb.img
- itc-statedb03-vda.img /data01/primary/itc-statedb03-vda.img
- itc-statedb03-vdb.img /data01/primary/itc-statedb03-vdb.img
+ $ ssh t05 'kvmsh vol-list'
+ tdh-d01-vda.img /data01/primary/tdh-d01-vda.img
+ tdh-d01-vdb.img /data01/primary/tdh-d01-vdb.img
+ tdh-d03-vda.img /data01/primary/tdh-d03-vda.img
+ tdh-d03-vdb.img /data01/primary/tdh-d03-vdb.img
 
- $ ssh sm-05 'kvmsh vol-delete itc-statedb03-vda.img'
- $ ssh sm-05 'kvmsh vol-delete itc-statedb03-vdb.img'
+ $ ssh sm-05 'kvmsh vol-delete tdh-d03-vda.img'
+ $ ssh sm-05 'kvmsh vol-delete tdh-d03-vdb.img'
 ```
 
 Or in a more convenient fashion:
 ```
+vmname="tdh-d03"
 for x in $( kvmsh vol-list | grep $vmname | \
     awk '{ print $1 }' ); do kvmsh vol-delete $x; done
 ```
 
-### Destroying VMs from Manifest
+## Destroying VMs from Manifest
 
 Create a JSON manifest containing the VMs in question.
 Verify the manifest is accurate since we are permanently deleting.
 ```
-$ cat statedb.json
+$ cat tdh-datanodes.json
 [
     {
-        "host" : "sm-04.itc.internal",
+        "host" : "t04.tdh.internal",
         "vmspecs" : [
             {
-                "name" : "itc-statedb03",
-                "description" : "StateDb (Redis) for PhyConv"
-                "hostname" : "itc-statedb03.itc.internal",
+                "name" : "tdh-d03",
+                "description" : "TDH Datanode"
+                "hostname" : "tdh-d03.tdh.internal",
                 "ipaddress" : "172.30.10.193",
                 "vcpus" : 2,
                 "memoryGb" : 8,
@@ -321,20 +317,20 @@ $ cat statedb.json
 
  Now delete the VMs, noting all disks are also removed.
 ```
-$ ~/bin/kvm-mgr.sh delete statedb.json
+$ ~/bin/kvm-mgr.sh delete tdh-datanodes.json
 WARNING! 'delete' action will remove all VM's!
     (Consider testing with --dryrun option)
 Are you certain you wish to continue?  [y/N] y
-( ssh sm-01 'kvmsh delete itc-statedb03' )
-Domain itc-itc-statedb03 has been undefined
-( ssh sm-01 'kvmsh vol-delete "/data01/primary/itc-statedb03-vda.img"' )
-Vol /data01/primary/itc-statedb03-vda.img deleted.
-( ssh sm-01 'kvmsh vol-delete "/data01/primary/itc-statedb03-vdb.img"' )
-Vol /data01/primary/itc-statedb03-vdb.img deleted.
+( ssh t04 'kvmsh delete tdh-d03' )
+Domain tdh-d03 has been undefined
+( ssh t04 'kvmsh vol-delete "/data01/primary/tdh-d03-vda.img"' )
+Vol /data01/primary/tdh-d03-vda.img deleted.
+( ssh t04 'kvmsh vol-delete "/data01/primary/tdh-d03-vdb.img"' )
+Vol /data01/primary/tdh-d03-vdb.img deleted.
 kvmsh Finished.
 ```
 
-### Delete a VM without destroying assets.  
+## Delete a VM without destroying assets.  
 A given VM under management of libvirt internally stores the XML definition
 of the VM which also defines the attached volumes. The individual VM
 definitions can be exported via `kvmsh dumpxml <name> > name.xml` to save
@@ -342,11 +338,11 @@ the definition, as well as using the manifest to perform the action across
 multiple nodes. Note the *kvm-mgr.sh* switch `--keep-disks` to
 save the volumes.
 ```
-$ ./bin/kvm-mgr.sh dumpxml manifest.com
-$ ./bin/kvm-mgr.sh --keep-disks delete statedb.json
+$ ./bin/kvm-mgr.sh dumpxml tdh-datanodes.json
+$ ./bin/kvm-mgr.sh --keep-disks delete tdh-datanodes.json
 ```
 
-### Validate Host Resources
+## Validate Host Resources
 
 The `vm-consumption.sh` script will provide the resource consumptions per node.
 The input parameter is a JSON manifest file.
@@ -354,7 +350,7 @@ The input parameter is a JSON manifest file.
 $ ./bin/vm-consumptions.sh <manifest.json>
 ```
 
-#### Create a Consolidated Manifest
+### Create a Consolidated Manifest
 
 The `mergeAllManifests.sh` script is used to consolidate all JSON manifests,
 under `~/manifests` by default, into one for use with `vm-consumptions.sh`.
@@ -364,31 +360,31 @@ $ cp manifest.json ~/kvm-manifest.json
 
 $ ./bin/vm-consumptions.sh ~/kvm-manifest.json
 
-sm-01 :
+t01 :
   cpus total:  96  memory total:  512
   cpus used:   12   memory used:  96
  ------------------------------------------------
   cpus avail:  84  memory avail:  416
 
-sm-02 :
+t02 :
   cpus total:  96  memory total:  512
   cpus used:   12   memory used:  96
  ------------------------------------------------
   cpus avail:  84  memory avail:  416
 
-sm-03 :
+t03 :
   cpus total:  96  memory total:  512
   cpus used:   30   memory used:  90
  ------------------------------------------------
   cpus avail:  66  memory avail:  422
 
-sm-04 :
+t04 :
   cpus total:  96  memory total:  512
   cpus used:   40   memory used:  122
  ------------------------------------------------
   cpus avail:  56  memory avail:  390
 
-sm-05 :
+t05 :
   cpus total:  96  memory total:  512
   cpus used:   32   memory used:  100
  ------------------------------------------------
@@ -409,30 +405,30 @@ this document. The following describes how to migrate VM's offline.
 Steps to Migrate.
 
 1. Save the VM Specification.
-```
-kvmsh dumpxml vmname > vmname.xml
-```
+    ```
+    kvmsh dumpxml vmname > vmname.xml
+    ```
 
 2. Copy vm disks to primary storage on alternate host.
 
 3. Copy the xml and define the new vm.
-```
-kvmsh define vmname.xml
-```
+    ```
+    kvmsh define vmname.xml
+    ```
 
 4. Remove the VM specification from the original host
-```
-kvmsh delete vmname.xml
-```
+    ```
+    kvmsh delete vmname.xml
+    ```
 
 5. Remove volumes from original host
-```
-kvmsh vol-delete volname.img
-```
+    ```
+    kvmsh vol-delete volname.img
+    ```
 
 6. Start the VM on the new host
-```
-kvmsh start vmname
-```
+    ```
+    kvmsh start vmname
+    ```
 
 Lastly be sure to update the VM Manifest accordingly.

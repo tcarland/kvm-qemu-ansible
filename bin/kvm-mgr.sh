@@ -22,7 +22,7 @@
 #  ]
 #
 PNAME=${0##*\/}
-VERSION="0.8.0"
+VERSION="v20.05"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -173,7 +173,7 @@ while [ $# -gt 0 ]; do
         -K|--keep-disks)
             delete=0
             ;;
-        -h|--help)
+        'help'|-h|--help)
             usage
             exit 0
             ;;
@@ -204,7 +204,7 @@ while [ $# -gt 0 ]; do
         -X|--noprompt)
             noprompt=1
             ;;
-        -V|--version)
+        'version'|-V|--version)
             version
             exit 0
             ;;

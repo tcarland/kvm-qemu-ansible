@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v0.8.0"
+VERSION="v20.05"
 
 #--------------------------
 # defaults
@@ -227,7 +227,7 @@ maxvols=${#chars[@]}
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        -h|--help)
+        'help'|-h|--help)
             usage
             exit 0
             ;;
@@ -290,7 +290,7 @@ while [ $# -gt 0 ]; do
             virt_uri="$2"
             shift
             ;;
-        -V|--version)
+        'version'|-V|--version)
             version
             exit 0
             ;;
