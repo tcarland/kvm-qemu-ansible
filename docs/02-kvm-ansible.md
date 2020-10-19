@@ -81,12 +81,6 @@ dim01
 
 ## Roles
 
-- **common**:  System bootstrapping common to all systems. Intended to be
-  applied first to bootstrap accounts and packages with more specific roles
-  or playbooks running after. While it may be idempotent, it does provide base
-  system configs that may have been overwritten by app specific playbooks ran
-  after. Most importantly, this role is used to distribute users and ssh keys.
-
 - **kvm-qemu**: Consists of a `nodes` group defining the list of hosts that
   will run a KVM Hypervisor. An additional host group of `nfs_server` will
   create the NFS share for use as a secondary storage pool.
@@ -115,10 +109,10 @@ can be applied via the common role.
 
 Running a complete environment install (which includes the common role)
 ```
-ansible-playbook -i inventory/itc-sv04/hosts kvm-qemu.yml
+ansible-playbook -i inventory/tdh-west1/hosts kvm-qemu.yml
 ```
 
-Running a user update via common playbook.
+Install the management tools.
 ```
-ansible-playbook -i inventory/itc-sv04/hosts common.yml
+ansible-playbook -i inventory/tdh-west1/hosts kvm-mgr.yml
 ```
