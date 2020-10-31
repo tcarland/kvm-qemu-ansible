@@ -18,3 +18,5 @@ deployment and operational guides.
 
  - [03-kvm-operations.md](docs/03-kvm-operations.md)
 
+
+  The docs can be converted to pdf by running `make docs`.
