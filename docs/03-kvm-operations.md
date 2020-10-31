@@ -1,26 +1,27 @@
 KVM Operations
 ===============
 
-  Once Ansible has been run, all hosts should be configured with a KVM
-Hypervisor, a network bridge, and optionally a NFS share for secondary
-storage. The Ansible does not, however, configure any storage pools or
-networking on the nodes. The networking should already be configured
-before continuing with these steps to configure the storage pools.
+  Once the Ansible playbook has run, all hosts should be configured 
+with a KVM Hypervisor, a network bridge, and optionally a NFS share 
+for secondary storage. The Ansible does not, however, configure any 
+storage pools or networking on the nodes. The networking should 
+already be configured before continuing with these steps to configure 
+the storage pools.
 
   Additionally, there are two management scripts provided for managing
 Virtual Machines across the infrastructure.
 
-- **kvmsh**:  This tool primarily wraps the usage of libvirt related tools
-such as 'virsh', 'virt-install', and 'virt-clone'. It utilizes the same
-command structure as 'virsh', but provides the ability to perform the
-additional install and cloning steps along with defaults for use in a
-clustered setup. This tool is run on individual nodes to manipulate the
-VMs on that given node.
+- **kvmsh**:  This tool primarily wraps the usage of libvirt related 
+tools such as 'virsh', 'virt-install', and 'virt-clone'. It utilizes 
+the same command structure as 'virsh', but provides the ability to 
+perform the additional install and cloning steps along with defaults 
+for use in a clustered setup. This tool is run on individual nodes to 
+manipulate the VMs on that given node.
 
 - **kvm-mgr.sh**:  A script for managing VMs across a cluster from a
-single management node. Relying on SSH host keys, the tool takes a manifest
-describing the VM configurations and utilizes *kvmsh* per node to implement
-various actions like create, start, stop, and delete.
+single management node. Relying on SSH host keys, the tool takes a 
+manifest describing the VM configurations and utilizes *kvmsh* per node 
+to implement various actions like create, start, stop, and delete.
 
 The inventory for KVM hosts is a JSON Manifest of the following schema:
 ```
@@ -44,23 +45,26 @@ The inventory for KVM hosts is a JSON Manifest of the following schema:
 ```
 
 
-## Requirements for running scripts
+## Requirements 
 
 The requirements for running the tools are:
- - A management node (like an Ansible server) for running *kvm-mgr.sh* using 
-   SSH Host Keys.
- - `clustershell` for running 'kvmsh' across nodes is not directly required
+
+- A management node (like an Ansible server) for running *kvm-mgr.sh* using 
+  SSH Host Keys.
+
+- `clustershell` for running 'kvmsh' across nodes is not directly required
    but is very useful and recommended.
- - The 'kvmsh' utility to be distributed to all nodes and placed in the
-   system path.
-    ```
-    clush -g lab --copy kvmsh
-    clush -g lab 'sudo cp kvmsh /usr/local/bin'
-    clush -g lab 'rm kvmsh'
-    ```
- - *DnsMasq* should be installed on the management node where 'kvm-mgr.sh' is
-   run from. This is used to provide DNS configuration and Static IP assignments 
-   for the cluster via DHCP.
+
+- The 'kvmsh' utility to be distributed to all nodes and placed in the
+  system path.
+  ```
+  clush -g lab --copy kvmsh
+  clush -g lab 'sudo cp kvmsh /usr/local/bin'
+  clush -g lab 'rm kvmsh'
+  ```
+- *DnsMasq* should be installed on the management node where 'kvm-mgr.sh' is
+  run from. This is used to provide DNS configuration and Static IP assignments 
+  for the cluster via DHCP.
 
 ## DnsMasq
 
@@ -79,40 +83,39 @@ cloned VMs, or snapshots, etc.
 
 - Creating the primary storage pool. Note the storage pool path should be made 
 consistent across all nodes.
-    ```
-    # default pool is our local, primary storage pool.
-    #  kvmsh will create, build, and start the pool
-    clush -B -g lab 'kvmsh create-pool /data01/primary default'
-    clush -B -g lab 'kvmsh pool-autostart default'
-    ```
-    For reference purposes, the following is the `virsh` equivalent of the above
-    commands:
-    ```
-    clush -B -g lab 'virsh --connect qemu:///system pool-define-as default dir - - - - "/data01/primary"'
-    clush -B -g lab 'virsh --connect qemu:///system pool-build default'
-    clush -B -g lab 'virsh --connect qemu:///system pool-start default'
-    clush -B -g lab 'virsh --connect qemu:///system pool-autostart default'
-    ```
+  ```
+  # default pool is our local, primary storage pool.
+  # kvmsh will create, build, and start the pool
+  clush -B -g lab 'kvmsh create-pool /data01/primary default'
+  clush -B -g lab 'kvmsh pool-autostart default'
+  ```
+  For reference purposes, the following is the `virsh` equivalent of the above
+  commands:
+  ```
+  clush -B -g lab 'virsh --connect qemu:///system pool-define-as default dir - - - - "/data01/primary"'
+  clush -B -g lab 'virsh --connect qemu:///system pool-build default'
+  clush -B -g lab 'virsh --connect qemu:///system pool-start default'
+  clush -B -g lab 'virsh --connect qemu:///system pool-autostart default'
+  ```
 
 - If the NFS Server role was deployed and, for example, the share is available as
 '/secondary', we would add the storage-pool same as above.
-    ```
-    clush -B -g lab 'kvmsh create-pool /secondary secondary'
-    ```
-    Again, the virsh equivalent to above:
-    ```
-    clush -B -g lab 'virsh --connect qemu:///system pool-define-as secondary dir - - - - "/secondary"'
-    clush -B -g lab 'virsh --connect qemu:///system pool-build secondary'
-    clush -B -g lab 'virsh --connect qemu:///system pool-start secondary'
-    ```
+  ```
+  clush -B -g lab 'kvmsh create-pool /secondary secondary'
+  ```
+  The virsh equivalent to above:
+  ```
+  clush -B -g lab 'virsh --connect qemu:///system pool-define-as secondary dir - - - - "/secondary"'
+  clush -B -g lab 'virsh --connect qemu:///system pool-build secondary'
+  clush -B -g lab 'virsh --connect qemu:///system pool-start secondary'
+  ```
 
 - Verify the pools via pool-list:
-    ```
-    clush -B -g lab 'kvmsh pool-list'
-
-    # virsh equivalent command
-    clush -B -g lab 'virsh --connect qemu:///system pool-list --all'
-    ```
+  ```
+  clush -B -g lab 'kvmsh pool-list'
+  # virsh equivalent command
+  clush -B -g lab 'virsh --connect qemu:///system pool-list --all'
+  ```
 
 ## Creating a Base VM Image
 
@@ -159,25 +162,25 @@ with the correct SSH key(s) and configuring the resolvers to point to our
 internal DNS Server, which is the Management Node. This list provides
 this and some other items worth configuring into the base image:
 
- - Set the resolvers to the DnsMasq server.
- - Configure ssh keys for accounts as needed.
- - Set NOPASSWD (visudo) for the wheel or sudo group
- - Disable firewalld if desired.
- - Disable selinux if desired.
- - Disable NetworkManager if desired.
+- Set the resolvers to the DnsMasq server.
+- Configure ssh keys for accounts as needed.
+- Set NOPASSWD (visudo) for the wheel or sudo group
+- Disable firewalld if desired.
+- Disable selinux if desired.
+- Disable NetworkManager if desired.
 
 Once complete, the final step would be to stop the VM and acquire the
 XML Definition for use across all remaining nodes to define our source VM.
 ```
- $ kvmsh stop centos7
- $ kvmsh dumpxml centos7 > centos7.xml
+$ kvmsh stop centos7
+$ kvmsh dumpxml centos7 > centos7.xml
 
- # copy centos7.xml to all hosts
- [admin-01]$ scp sm-01:centos7.xml .
- [admin-01]$ clush -g lab --copy centos7.xml
+# copy centos7.xml to all hosts
+[admin-01]$ scp sm-01:centos7.xml .
+[admin-01]$ clush -g lab --copy centos7.xml
 
- # Now we define our base VM across all nodes
- [admin-01]$ clush -g lab 'kvmsh define centos7.xml'
+# Now we define our base VM across all nodes
+[admin-01]$ clush -g lab 'kvmsh define centos7.xml'
 ```
 
 ## Building VMs

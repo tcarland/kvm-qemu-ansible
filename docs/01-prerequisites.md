@@ -1,17 +1,19 @@
-Prerequisites
-===============
+KVM-QEMU Ansible Prerequisites
+==============================
 
 
 A KVM Cluster consists a set of nodes with VT-d virtualization extensions
 enabled allowing for the installation of a KVM Hypervisor and **libvirtd** for
-VM orchestration.  A management node (any node in cluster or separate) is used
+VM orchestration.  A management node (any node in cluster or otherwise) is used
 to deploy, configure, and manage VMs using SSH. Thus, the management node must
 be configured with an account that has SSH key-based login with password-less
 sudo rights. This is used both for running Ansible playbooks and KVM Management.
 
 This document covers the prerequisites needed for deploying a KVM cluster.
 
-Ensure the **vmx** extension exists in cpu features for all nodes.
+## Virtualization Extensions
+VT-d enabled in the BIOS results in the **vmx** extension existing in cpu 
+features. Ensure this extension is enabled for all nodes.
 ```
 lscpu | grep vmx
 ```
