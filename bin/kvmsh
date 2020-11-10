@@ -9,15 +9,15 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v20.06"
+VERSION="v20.07"
 
-#--------------------------
+# ------------------------------------
 # defaults
 pool="default"
 network="bridge=br0"  # bridge=virbr0 is the libvirt default NAT interface
 ostype="linux"
 osvar="centos7.0"
-image="CentOS-7-x86_64-Minimal-1908.iso"
+image="CentOS-7-x86_64-Minimal-2003.iso"
 memory="1024,maxmemory=2048"
 vcpus="1"
 graphics="vnc"
@@ -35,10 +35,15 @@ vnc="vnc,listen=0.0.0.0"
 serial="console=ttyS0,115200n8"
 mac=
 
-
 # map pool name to storage target
 declare -A poolmap
 
+if [ -n "$KVMSH_DEFAULT_IMAGE" ]; then 
+    image="$KVMSH_DEFAULT_IMAGE"
+fi
+
+
+# ------------------------------------
 
 usage()
 {
@@ -53,7 +58,7 @@ usage()
     printf "  -G|--graphics <type>    : KVM Graphics type; Default is 'VNC', unless -C is set.\n"
     printf "  -h|--help               : Show usage info and exit. \n"
     printf "  -i|--image    <name>    : Name of source image (relative to storage pool).\n"
-    printf "     Default image is     : '$image'\n"
+    printf "    Default boot image is : \$KVM_DEFAULT_IMAGE or '$image'\n"
     printf "  -n|--dryrun             : Enable DRYRUN, Nothing is executed.\n"
     printf "  -N|--network  <if>      : KVM Network, default is '$network'.\n"
     printf "  -m|--memory   <Mib>     : Memory allocation in Mb and optionally max memory.\n"

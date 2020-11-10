@@ -122,7 +122,8 @@ consistent across all nodes.
   The managment script, `kvm-mgr.sh`, relies on a base VM image when building
 the VM's. This base images is used across all nodes to build the environment. By
 default, the scripts use a Centos7 ISO as source iso when creating VMs from
-scratch, but other ISO's can be provided by the `--image` command option.
+scratch, but other ISO's can be provided by the `--image` command option to `kvmsh`
+or by setting KVMSH_DEFAULT_IMAGE in the environment.
 
   Since the resulting base VM will be cloned by all nodes when building VM, the
 VM should be created on the Secondary Storage pool (NFS) to make it immediately 
@@ -134,7 +135,7 @@ same storage pool.
 ```
 $ ssh sm-01 'ls -l /secondary'
 total 2525812
--rw-r--r--. 1 root idps   987758592 Apr 21 15:34 CentOS-7-x86_64-Minimal-1908.iso
+-rw-r--r--. 1 root idps   987758592 Apr 21 15:34 CentOS-7-x86_64-Minimal-2003.iso
 ```
 
 The base VM can then be created on any node and pointed to the secondary pool.
@@ -148,11 +149,12 @@ at boot with DHCP. Once complete, the VM will exist in our secondary pool:
 ```
 [idps@sm-01]$ ls -l /secondary
 -rw-r--r--. 1 root root 42949672960 Apr 27 13:12 centos7-vda.img
--rw-r--r--. 1 root idps   987758592 Apr 21 15:34 CentOS-7-x86_64-Minimal-1908.iso
+-rw-r--r--. 1 root idps   987758592 Apr 21 15:34 CentOS-7-x86_64-Minimal-2003.iso
 ```
 
 Another example using a larger boot disk (default is 40G)
 ```
+KVMSH_DEFAULT_IMAGE="CentOS-7-x86_64-Minimal-2003.iso"
 $ kvmsh --pool secondary --bootsize 80 --console create centos7-80
 ```
 
