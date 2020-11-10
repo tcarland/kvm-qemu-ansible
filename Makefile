@@ -18,7 +18,7 @@ clean:
 distclean: clean
 
 install:
-ifdef $(TCAMAKE_PREFIX)
+ifdef TCAMAKE_PREFIX
 	( $(CP) bin/kvm-mgr.sh $(TCAMAKE_PREFIX)/bin )
 	( $(CP) bin/kvmsh $(TCAMAKE_PREFIX)/bin )
 	( $(CP) bin/vm-consumptions.sh $(TCAMAKE_PREFIX)/bin )
