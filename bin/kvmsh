@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v20.07"
+VERSION="v20.08"
 
 # ------------------------------------
 # defaults
@@ -329,7 +329,6 @@ attach*)
     fi
     if [ -z "$name" ]; then
         echo "$PNAME Error, no VM defined."
-        usage
         exit 1
     fi
 
@@ -478,8 +477,7 @@ status)
 # --- PASSTHROUGH OPERATIONS to virsh
 start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|define)
     if [ -z "$name" ]; then
-        echo "$PNAME Error: no name provided."
-        usage
+        echo "$PNAME Error: no <name> provided."
         exit 1
     fi
 
@@ -492,8 +490,7 @@ start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|de
 # --- SET MEMORY
 setmem|setmaxmem)
     if [ -z "$name" ] || [ -z "$args" ]; then
-        echo "$PNAME Error with arguments"
-        usage
+        echo "$PNAME Error in arguments"
         exit 1
     fi
     # flip args
@@ -518,10 +515,9 @@ setmem|setmaxmem)
     ;;
 
 # --- SET VCPUS
-setvcpus)
+setvcpu*)
     if [ -z "$name" ] || [ -z "$args" ]; then
-        echo "$PNAME Error with arguments"
-        usage
+        echo "$PNAME Error with setvcpus arguments"
         exit 1
     fi
     # flip args
@@ -545,8 +541,7 @@ setvcpus)
 # --- STOP VMS
 stop|shutdown|destroy)
     if [ -z "$name" ]; then
-        echo "$PNAME Error: no name provided."
-        usage
+        echo "$PNAME Error: no <name> provided."
         exit 1
     fi
 
@@ -565,8 +560,7 @@ stop|shutdown|destroy)
 # --- DELETE VMS
 delete|undefine)
     if [ -z "$name" ]; then
-        echo "$PNAME Error: no name provided."
-        usage
+        echo "$PNAME Error: no <name> provided."
         exit 1
     fi
 
@@ -598,7 +592,6 @@ vol-delete|delete-vol)
 pool-create|create-pool)
     if [ -z "$name" ]; then
         echo "$PNAME Error, directory name not provided."
-        usage
         exit 1
     fi
 
@@ -646,7 +639,6 @@ pool-create|create-pool)
 pool-autostart)
     if [ -z "$name" ]; then
         echo "$PNAME Error, directory name not provided."
-        usage
         exit 1
     fi
 
@@ -663,6 +655,7 @@ pool-delete|delete-pool)
     if [ -n "$name" ]; then
         pool="$name"
     fi
+
     if pool_is_active $pool; then
         echo "Stopping pool '$pool'.."
         if [ $dryrun -gt 0 ]; then
