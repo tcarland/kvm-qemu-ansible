@@ -59,7 +59,7 @@ clush -a 'sudo systemctl stop NetworkManager'
 clush -a 'sudo systemctl disable NetworkManager'
 ```
 
-Configure *ifcfg-br0* in `/etc/sysconfig/network-scripts/` :
+Configure *ifcfg-br0* in `/etc/sysconfig/network-scripts/` for CentOS/RHEL:
 ```
 $ cat ifcfg-br0
 DEVICE=br0
