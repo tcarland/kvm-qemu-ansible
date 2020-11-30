@@ -20,7 +20,7 @@ ostype="linux"
 osvar="centos7.0"
 image="CentOS-7-x86_64-Minimal-2003.iso"
 
-ubuntu="ubuntu18.04"
+ubuntu="ubuntu20.04"
 focal="http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/"
 
 memory="1024,maxmemory=2048"
