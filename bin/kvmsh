@@ -400,7 +400,11 @@ create)
         exit $rt
     fi
 
-    srcimg="$target/$image"
+    if [[ $image =~ ^http ]]; then
+        srcimg="$image"
+    else
+        srcimg="$target/$image"
+    fi
 
     cmdargs=(--name "$name" \
     --memory $memory --vcpus $vcpus \
