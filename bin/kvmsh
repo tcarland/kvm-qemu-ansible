@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v20.08"
+VERSION="v20.09"
 
 # ------------------------------------
 # defaults
@@ -27,6 +27,7 @@ disksz="100G"
 mindisksz=5
 disknum=0
 dryrun=1
+cdrom=1
 format="raw"  # or qcow2
 
 virt_uri="qemu:///system"
@@ -59,6 +60,7 @@ usage()
     printf "  -h|--help               : Show usage info and exit. \n"
     printf "  -i|--image    <name>    : Name of source image (relative to storage pool).\n"
     printf "    Default boot image is : \$KVM_DEFAULT_IMAGE or '$image'\n"
+    printf "  -I|--iso|--cdrom        : Treat image as a boot iso, ie. --cdrom to virt-install.\n"
     printf "  -n|--dryrun             : Enable DRYRUN, Nothing is executed.\n"
     printf "  -N|--network  <if>      : KVM Network, default is '$network'.\n"
     printf "  -m|--memory   <Mib>     : Memory allocation in Mb and optionally max memory.\n"
@@ -255,6 +257,9 @@ while [ $# -gt 0 ]; do
             image="$2"
             shift
             ;;
+        -I|--iso|--cdrom)
+            cdrom=0
+            ;;
         -l|--list)
             action="list"
             ;;
@@ -400,8 +405,13 @@ create)
     cmdargs=(--name "$name" \
     --memory $memory --vcpus $vcpus \
     --os-type "$ostype" --os-variant "$osvar" \
-    --disk "path=$diskimg" --network "$network" \
-    --location "$srcimg")
+    --disk "path=$diskimg" --network "$network")
+
+    if [ $cdrom -eq 0 ]; then
+        cmdargs+=(--cdrom "$srcimg")
+    else
+        cmdargs+=(--location "$srcimg")
+    fi
 
     if [ $use_console -eq 0 ]; then
         cmdargs+=(--graphics "none" --extra-args="$serial")
