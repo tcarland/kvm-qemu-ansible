@@ -4,6 +4,7 @@ yum_kvm_packages:
  - qemu-kvm
  - qemu-kvm-tools
  - libvirt
+ - libosinfo
  - virt-install
  - virt-top
  - libguestfs-tools
@@ -18,6 +19,7 @@ apt_kvm_packages:
  - libvirt-daemon-driver-storage-zfs
  - virtinst
  - virt-top
+ - libosinfo-bin
  - libguestfs-tools
  - bridge-utils
  - ethtool

@@ -9,15 +9,20 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v20.09"
+VERSION="v20.09.1"
 
 # ------------------------------------
 # defaults
 pool="default"
 network="bridge=br0"  # bridge=virbr0 is the libvirt default NAT interface
 ostype="linux"
+
 osvar="centos7.0"
 image="CentOS-7-x86_64-Minimal-2003.iso"
+
+ubuntu="ubuntu18.04"
+focal="http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/"
+
 memory="1024,maxmemory=2048"
 vcpus="1"
 graphics="vnc"
@@ -404,6 +409,10 @@ create)
         srcimg="$image"
     else
         srcimg="$target/$image"
+    fi
+
+    if [[ $srcimg =~ ubuntu ]]; then
+        osvar="$ubuntu"
     fi
 
     cmdargs=(--name "$name" \
