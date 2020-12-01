@@ -15,6 +15,7 @@ yum_kvm_packages:
 
 apt_kvm_packages:
  - qemu-kvm
+ - qemu-utils
  - libvirt-daemon-system
  - libvirt-daemon-driver-storage-zfs
  - virtinst
