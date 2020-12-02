@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v20.09.1"
+VERSION="v20.10.0"
 
 # ------------------------------------
 # defaults
@@ -63,13 +63,15 @@ usage()
     printf "  -f|--format   <type>    : VM disk type: 'qcow2|raw', Default is '$format'.\n"
     printf "  -G|--graphics <type>    : KVM Graphics type; Default is 'VNC', unless -C is set.\n"
     printf "  -h|--help               : Show usage info and exit. \n"
-    printf "  -i|--image    <name>    : Name of source image (relative to storage pool).\n"
-    printf "    Default boot image is : \$KVM_DEFAULT_IMAGE or '$image'\n"
+    printf "  -i|--image    <name>    : Name of image, relative to storage pool, or a location.\n"
+    printf "    Default boot image is : \$KVM_DEFAULT_IMAGE or '$image' for '$osvar', or \n"
+    printf "                            $focal for '$ubuntu'. \n"
     printf "  -I|--iso|--cdrom        : Treat image as a boot iso, ie. --cdrom to virt-install.\n"
     printf "  -n|--dryrun             : Enable DRYRUN, Nothing is executed.\n"
     printf "  -N|--network  <if>      : KVM Network, default is '$network'.\n"
     printf "  -m|--memory   <Mib>     : Memory allocation in Mb and optionally max memory.\n"
     printf "                            eg. '--memory 1024' or '--memory $memory' \n"
+    printf "  -o|--os <ostype>        : Set virsh 'osvariant' for create. \n"
     printf "  -p|--pool    <name>     : Storage pool to use, if not '$pool'.\n"
     printf "  -u|--uri     <uri>      : Set the KVM connect uri, default is '$virt_uri'.\n"
     printf "  -V|--version            : Show version info and exit. \n"
@@ -295,6 +297,15 @@ while [ $# -gt 0 ]; do
             ;;
         -D|--disknum)
             disknum="$2"
+            shift
+            ;;
+        -o|--os|--osvar*)
+            osvar="$2"
+            if [[ $osvar =~ ubuntu ]]; then
+                if [[ ! $image =~ ubuntu ]]; then
+                    image="$focal"
+                fi
+            fi
             shift
             ;;
         -p|--pool)
