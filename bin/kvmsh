@@ -21,8 +21,8 @@ focal="http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/"
 pool="default"
 network="bridge=br0"  # bridge=virbr0 is the libvirt default NAT interface
 ostype="linux"
-osvar=
-image=
+osvar="$ubuntu"
+image="$focal"
 
 memory="1024,maxmemory=2048"
 vcpus="1"
