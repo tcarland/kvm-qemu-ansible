@@ -9,19 +9,20 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v20.10.0"
+VERSION="v20.11.0"
 
 # ------------------------------------
 # defaults
+centos="centos7.0"
+centos7="CentOS-7-x86_64-Minimal-2003.iso"
+ubuntu="ubuntu20.04"
+focal="http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/"
+
 pool="default"
 network="bridge=br0"  # bridge=virbr0 is the libvirt default NAT interface
 ostype="linux"
-
-osvar="centos7.0"
-image="CentOS-7-x86_64-Minimal-2003.iso"
-
-ubuntu="ubuntu20.04"
-focal="http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/"
+osvar=
+image=
 
 memory="1024,maxmemory=2048"
 vcpus="1"
@@ -64,8 +65,6 @@ usage()
     printf "  -G|--graphics <type>    : KVM Graphics type; Default is 'VNC', unless -C is set.\n"
     printf "  -h|--help               : Show usage info and exit. \n"
     printf "  -i|--image    <name>    : Name of image, relative to storage pool, or a location.\n"
-    printf "    Default boot image is : \$KVM_DEFAULT_IMAGE or '$image' for '$osvar', or \n"
-    printf "                            $focal for '$ubuntu'. \n"
     printf "  -I|--iso|--cdrom        : Treat image as a boot iso, ie. --cdrom to virt-install.\n"
     printf "  -n|--dryrun             : Enable DRYRUN, Nothing is executed.\n"
     printf "  -N|--network  <if>      : KVM Network, default is '$network'.\n"
@@ -301,9 +300,11 @@ while [ $# -gt 0 ]; do
             ;;
         -o|--os|--osvar*)
             osvar="$2"
-            if [[ $osvar =~ ubuntu ]]; then
-                if [[ ! $image =~ ubuntu ]]; then
+            if [ -z "$image" ]; then
+                if [[ $osvar =~ ubuntu ]]; then
                     image="$focal"
+                elif [[ $osvar =~ centos ]]; then
+                    image="$centos7"
                 fi
             fi
             shift
@@ -422,14 +423,18 @@ create)
         srcimg="$target/$image"
     fi
 
-    if [[ $srcimg =~ ubuntu ]]; then
-        osvar="$ubuntu"
+    if [ -z "$osvar" ]; then 
+        if [[ $srcimg =~ ubuntu ]]; then
+            osvar="$ubuntu"
+        elif [[ $srcimg =~ centos ]]; then
+            osvar="$centos"
+        fi
     fi
 
     cmdargs=(--name "$name" \
-    --memory $memory --vcpus $vcpus \
-    --os-type "$ostype" --os-variant "$osvar" \
-    --disk "path=$diskimg" --network "$network")
+      --memory $memory --vcpus $vcpus \
+      --os-type "$ostype" --os-variant "$osvar" \
+      --disk "path=$diskimg" --network "$network")
 
     if [ $cdrom -eq 0 ]; then
         cmdargs+=(--cdrom "$srcimg")

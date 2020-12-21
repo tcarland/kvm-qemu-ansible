@@ -22,11 +22,11 @@
 #  ]
 #
 PNAME=${0##*\/}
-VERSION="v20.10.0"
+VERSION="v20.11.0"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
-srcvm="centos7"
+srcvm="ubuntu20.04"
 srcxml=
 manifest=
 
