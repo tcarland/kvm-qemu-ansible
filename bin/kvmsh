@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v20.11.0"
+VERSION="v20.12"
 
 # ------------------------------------
 # defaults
@@ -52,60 +52,59 @@ fi
 
 # ------------------------------------
 
-usage()
-{
-    printf "\n"
-    printf "Usage: $PNAME [options] <action> <name> \n"
-    printf "  -b|--bootsize <xxG>     : Size of boot disk in Gb. Default is '$bootsz'. \n"
-    printf "  -C|--console            : Use serial console, sets 'none' for --graphics \n"
-    printf "  -c|--cpus     <n>       : Number of vcpus to allocate. \n"
-    printf "  -D|--disknum  <n>       : Number of disks to be attached. \n"
-    printf "  -d|--disksize <xxG>     : Size of disk(s) to be attached with unit, eg. '100G'\n"
-    printf "  -f|--format   <type>    : VM disk type: 'qcow2|raw', Default is '$format'.\n"
-    printf "  -G|--graphics <type>    : KVM Graphics type; Default is 'VNC', unless -C is set.\n"
-    printf "  -h|--help               : Show usage info and exit. \n"
-    printf "  -i|--image    <name>    : Name of image, relative to storage pool, or a location.\n"
-    printf "  -I|--iso|--cdrom        : Treat image as a boot iso, ie. --cdrom to virt-install.\n"
-    printf "  -n|--dryrun             : Enable DRYRUN, Nothing is executed.\n"
-    printf "  -N|--network  <if>      : KVM Network, default is '$network'.\n"
-    printf "  -m|--memory   <Mib>     : Memory allocation in Mb and optionally max memory.\n"
-    printf "                            eg. '--memory 1024' or '--memory $memory' \n"
-    printf "  -o|--os <ostype>        : Set virsh 'osvariant' for create. \n"
-    printf "  -p|--pool    <name>     : Storage pool to use, if not '$pool'.\n"
-    printf "  -u|--uri     <uri>      : Set the KVM connect uri, default is '$virt_uri'.\n"
-    printf "  -V|--version            : Show version info and exit. \n"
-    printf " \n"
-    printf "   <action>               : VM operation to perform, see below. \n"
-    printf "   <name>                 : Name of VM on which to operate the action. \n"
-    printf " \n"
-    printf " Actions:  \n"
-    printf "   create|delete  <name>  : Create or delete a VM (will not delete volumes).\n"
-    printf "   start|stop     <name>  : Start or stop a VM. \n"
-    printf "   create-pool <dir> <n>  : Creates a storage pool named <n> for a given dir.\n"
-    printf "   delete-pool    <name>  : Removes a pool definition (will not delete dir).\n"
-    printf "   attach-disk    <name>  : Attach volumes to a vm (use -D and -d options).\n"
-    printf "   delete-vol     <name>  : Delete a volume (will delete the disk image).\n"
-    printf "   clone <srcvm> <destvm> : Clones vm (set --pool to move storage pools).\n"
-    printf "   setmem    <xb> <name>  : Set a new memory value. Default unit is Kib.\n"
-    printf "   setmaxmem <xb> <name>  : Set a max memory value. eg. 'setmaxmem 32G myvm'.\n"
-    printf "   setvcpus   <n> <name>  : Set the number of vcpus for an existing VM.\n"
-    printf "   status         <name>  : Provides status via shell return code.\n"
-    printf "                            0=running, 1=stopped, 2=not found\n"
-    printf " \n"
-    printf "   pool-list              : List available pools.\n"
-    printf "   pool-autostart <pool>  : Set 'autostart' for pool.\n"
-    printf "   vol-list  <pool>       : List volumes in pool.\n"
-    printf "   list                   : List all virtual machines.\n"
-    printf "   mac-addr  <name>       : Print HW MacAddress for the given VM.\n"
-    printf " \n"
-}
+usage="
+A command-line tool for manipulating KVM-based virtual machines 
+wrapping the use of kvm tools 'virsh', 'virt-install', and 'virt-clone'.
 
+Synopsis:
+  $PNAME [options] <action> <name> 
 
-version()
-{
-    printf "$PNAME $VERSION\n"
-}
+Options:
+  -b|--bootsize <xxG>     : Size of boot disk in Gb. Default is '$bootsz'. 
+  -C|--console            : Use serial console, sets 'none' for --graphics 
+  -c|--cpus     <n>       : Number of vcpus to allocate. 
+  -D|--disknum  <n>       : Number of disks to be attached.
+  -d|--disksize <xxG>     : Size of disk(s) to be attached with unit, eg. '100G'
+  -f|--format   <type>    : VM disk type: 'qcow2|raw', Default is '$format'.
+  -G|--graphics <type>    : KVM Graphics type; Default is 'VNC', unless -C is set.
+  -h|--help               : Show usage info and exit. 
+  -i|--image    <name>    : Name of image, relative to storage pool, or a location.
+  -I|--iso|--cdrom        : Treat image as a boot iso, ie. --cdrom to virt-install.
+  -n|--dryrun             : Enable DRYRUN, Nothing is executed.
+  -N|--network  <if>      : KVM Network, default is '$network'.
+  -m|--memory   <Mib>     : Memory allocation in Mb and optionally max memory.
+                            eg. '--memory 1024' or '--memory $memory' 
+  -o|--os <ostype>        : Set virsh 'osvariant' for create. 
+  -p|--pool    <name>     : Storage pool to use, if not '$pool'.
+  -u|--uri     <uri>      : Set the KVM connect uri, default is '$virt_uri'.
+  -V|--version            : Show version info and exit. 
 
+   <action>               : VM operation to perform, see below. 
+   <name>                 : Name of VM on which to operate the action. 
+
+Actions: 
+  create|delete  <name>  : Create or delete a VM (will not delete volumes).
+  start|stop     <name>  : Start or stop a VM. 
+  create-pool <dir> <n>  : Creates a storage pool named <n> for a given dir.
+  delete-pool    <name>  : Removes a pool definition (will not delete dir).
+  attach-disk    <name>  : Attach volumes to a vm (use -D and -d options).
+  delete-vol     <name>  : Delete a volume (will delete the disk image).
+  clone <srcvm> <destvm> : Clones vm (set --pool to move storage pools).
+  setmem    <xb> <name>  : Set a new memory value. Default unit is Kib.
+  setmaxmem <xb> <name>  : Set a max memory value. eg. 'setmaxmem 32G myvm'.
+  setvcpus   <n> <name>  : Set the number of vcpus for an existing VM.
+  status         <name>  : Provides status via shell return code.
+                           0=running, 1=stopped, 2=not found
+  pool-list              : List available pools.
+  pool-autostart <pool>  : Set 'autostart' for pool.
+  vol-list  <pool>       : List volumes in pool.
+  list                   : List all virtual machines.
+  mac-addr  <name>       : Print HW MacAddress for the given VM.
+"
+
+version="$PNAME $VERSION"
+
+# ------------------------------------
 
 list_vms()
 {
@@ -241,7 +240,7 @@ maxvols=${#chars[@]}
 while [ $# -gt 0 ]; do
     case "$1" in
         'help'|-h|--help)
-            usage
+            echo "$usage"
             exit 0
             ;;
         -c|--cpus)
@@ -318,7 +317,7 @@ while [ $# -gt 0 ]; do
             shift
             ;;
         'version'|-V|--version)
-            version
+            echo "$version"
             exit 0
             ;;
         *)
@@ -475,7 +474,7 @@ clone)
 
     if [ -z "$name" ] || [ -z "$target" ]; then
         echo "$PNAME Error: no targets provided."
-        usage
+        echo "$usage"
         exit 1
     fi
 
@@ -495,7 +494,7 @@ clone)
 get-mac*|mac-addr*)
     if [ -z "$name" ]; then
         echo "$PNAME Error: no target provided."
-        usage
+        echo "$usage"
         exit 1
     fi
 
@@ -745,7 +744,7 @@ vol-list|list-vol*)
 
 *)
     echo "$PNAME Action missing or not recognized."
-    usage
+    echo "$usage"
     ;;
 esac
 
