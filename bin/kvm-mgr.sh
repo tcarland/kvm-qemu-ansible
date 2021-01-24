@@ -33,7 +33,6 @@ manifest=
 hostsfile="/etc/hosts"
 leasecfg="/etc/dnsmasq.d/kvm-leases"
 leasefile="/var/lib/dnsmasq/dnsmasq.leases"
-virt_uri="qemu:///system"
 
 nhost=0
 run=0
@@ -44,8 +43,9 @@ action=
 
 # ------------------------------------
 
+version="$PNAME $VERSION"
 usage="
-Manage KVM instances via JSON Manifests.
+Create and manage KVM infrastructure from JSON Manifests.
 
 Synopsis:
   $PNAME [options] <action> <kvm-manifest.json> 
@@ -78,8 +78,6 @@ Actions:
   setresources      : Will run setvcpus, setmem and setmaxmem for each 
                       VM in the manifest. VM's must be stopped. 
 "
-
-version="$PNAME $VERSION"
 
 # ------------------------------------
 
