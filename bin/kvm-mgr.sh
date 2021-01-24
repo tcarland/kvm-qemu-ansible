@@ -22,7 +22,7 @@
 #  ]
 #
 PNAME=${0##*\/}
-VERSION="v20.11.0"
+VERSION="v20.12"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -33,7 +33,6 @@ manifest=
 hostsfile="/etc/hosts"
 leasecfg="/etc/dnsmasq.d/kvm-leases"
 leasefile="/var/lib/dnsmasq/dnsmasq.leases"
-virt_uri="qemu:///system"
 
 nhost=0
 run=0
@@ -42,45 +41,45 @@ delete=1
 noprompt=0
 action=
 
+# ------------------------------------
 
-usage()
-{
-    printf "\n"
-    printf "Usage: $PNAME [options] <action> <kvm-manifest.json> \n"
-    printf "  -K|--keep-disks    : On 'delete' volumes will kept. \n"
-    printf "  -h|--help          : Show usage info and exit. \n"
-    printf "  -H|--hosts <file>  : Hosts file to update. Default is '$hostsfile'.\n"
-    printf "  -L|--lease <file>  : DnsMasq DHCP lease file. Default is '$leasecfg'.\n"
-    printf "  -p|--pool  <name>  : Storage pool to use, if not '$pool'.\n"
-    printf "  -n|--dryrun        : Enable DRYRUN, Nothing is executed.\n"
-    printf "  -s|--srcvm <name>  : Source VM to clone. Default is '$srcvm'.\n"
-    printf "  -x|--srcxml <file> : Source XML to define and use as the source VM.\n"
-    printf "  -X|--noprompt      : Disables safety prompt on delete.\n"
-    printf "  -V|--version       : Show version info and exit.\n"
-    printf "\n"
-    printf "   <action>          : Action to perform: build|start|stop|delete \n"
-    printf "   <manifest.json    : Name of JSON manifest file.\n"
-    printf "\n"
-    printf " Actions: \n"
-    printf "   build             : Build VMs defined by the manifest.\n"
-    printf "                       Clones a source VM and configures DnsMasq.\n"
-    printf "   start             : Start all VMs in the manifest.\n"
-    printf "   stop              : Stop all VMs in the manifest.\n"
-    printf "   delete            : Delete all VMs defined by the manifest.\n"
-    printf "   dumpxml           : Runs 'dumpxml' across the cluster locally.\n"
-    printf "                       The XML is saved to \$HOME on the host node.\n"
-    printf "   sethostname       : Configures VM hostnames, if not using the default \n"
-    printf "                       source VM ($srcvm), set '--srcvm' accordingly. \n"
-    printf "   setresources      : Will run setvcpus, setmem and setmaxmem for each \n"
-    printf "                       VM in the manifest. VM's must be stopped. \n"
-    printf "\n"
-}
+version="$PNAME $VERSION"
+usage="
+Create and manage KVM infrastructure from JSON Manifests.
 
+Synopsis:
+  $PNAME [options] <action> <kvm-manifest.json> 
 
-version()
-{
-    printf "$PNAME $VERSION\n"
-}
+Options:
+  -K|--keep-disks    : On 'delete' volumes will kept.
+  -h|--help          : Show usage info and exit. 
+  -H|--hosts <file>  : Hosts file to update. Default is '$hostsfile'.
+  -L|--lease <file>  : DnsMasq DHCP lease file. Default is '$leasecfg'.
+  -p|--pool  <name>  : Storage pool to use, if not '$pool'.
+  -n|--dryrun        : Enable DRYRUN, Nothing is executed.
+  -s|--srcvm <name>  : Source VM to clone. Default is '$srcvm'.
+  -x|--srcxml <file> : Source XML to define and use as the source VM.
+  -X|--noprompt      : Disables safety prompt on delete.
+  -V|--version       : Show version info and exit.
+
+   <action>          : Action to perform: build|start|stop|delete 
+   <manifest.json    : Name of JSON manifest file.
+
+Actions: 
+  build             : Build VMs defined by the manifest.
+                      Clones a source VM and configures DnsMasq.
+  start             : Start all VMs in the manifest.
+  stop              : Stop all VMs in the manifest.
+  delete            : Delete all VMs defined by the manifest.
+  dumpxml           : Runs 'dumpxml' across the cluster locally.
+                      The XML is saved to \$HOME on the host node.
+  sethostname       : Configures VM hostnames, if not using the default 
+                      source VM ($srcvm), set '--srcvm' accordingly. 
+  setresources      : Will run setvcpus, setmem and setmaxmem for each 
+                      VM in the manifest. VM's must be stopped. 
+"
+
+# ------------------------------------
 
 ask()
 {
@@ -174,7 +173,7 @@ while [ $# -gt 0 ]; do
             delete=0
             ;;
         'help'|-h|--help)
-            usage
+            echo "$usage"
             exit 0
             ;;
         -H|--hosts)
@@ -205,7 +204,7 @@ while [ $# -gt 0 ]; do
             noprompt=1
             ;;
         'version'|-V|--version)
-            version
+            echo "$version"
             exit 0
             ;;
         *)
@@ -218,7 +217,7 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$action" ]; then
-    usage
+    echo "$usage"
     exit 1
 fi
 
@@ -228,7 +227,7 @@ case "$action" in
 build|create)
     if [ -z "$manifest" ]; then
         echo "KVM Spec JSON not provided."
-        usage
+        echo "$usage"
         exit 1
     fi
 
@@ -342,7 +341,7 @@ build|create)
 start)
     if [ -z "$manifest" ]; then
         echo "$PNAME Error: JSON manifest not provided."
-        usage
+        echo "$usage"
         exit 1
     fi
 
@@ -425,7 +424,7 @@ sethostname*)
 stop|destroy)
     if [ -z "$manifest" ]; then
         echo "$PNAME Error: JSON manifest not provided."
-        usage
+        echo "$usage"
         exit 1
     fi
 
@@ -451,7 +450,7 @@ stop|destroy)
 delete)
     if [ -z "$manifest" ]; then
         echo "$PNAME Error: JSON manifest not provided."
-        usage
+        echo "$usage"
         exit 1
     fi
 
@@ -517,7 +516,7 @@ delete)
 dumpxml)
     if [ -z "$manifest" ]; then
         echo "$PNAME Error: JSON manifest not provided."
-        usage
+        echo "$usage"
         exit 1
     fi
 
@@ -543,7 +542,7 @@ dumpxml)
 setresource*)
     if [ -z "$manifest" ]; then
         echo "$PNAME Error: JSON manifest not provided."
-        usage
+        echo "$usage"
         exit 1
     fi
 
