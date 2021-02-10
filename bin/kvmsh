@@ -513,15 +513,12 @@ status)
     ;;
 
 # --- PASSTHROUGH OPERATIONS to virsh
-start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|define)
-    if [ -z "$name" ]; then
-        echo "$PNAME Error: no <name> provided."
-        exit 1
-    fi
-
+start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|define|net*)
     if [ $dryrun -gt 0 ]; then
         ( $virsh $action $name )
         rt=$?
+    else
+        echo "( $virsh $action $name )"
     fi
     ;;
 
