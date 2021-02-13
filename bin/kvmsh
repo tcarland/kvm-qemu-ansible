@@ -9,14 +9,14 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v20.12"
+VERSION="v21.01"
 
 # ------------------------------------
 # defaults
-centos="centos7.0"
-centos7="CentOS-7-x86_64-Minimal-2003.iso"
 ubuntu="ubuntu20.04"
 focal="http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/"
+centos="centos7.0"
+centos7="CentOS-7-x86_64-Minimal-2003.iso"
 
 pool="default"
 network="bridge=br0"  # bridge=virbr0 is the libvirt default NAT interface
@@ -48,7 +48,6 @@ declare -A poolmap
 if [ -n "$KVMSH_DEFAULT_IMAGE" ]; then 
     image="$KVMSH_DEFAULT_IMAGE"
 fi
-
 
 # ------------------------------------
 
@@ -345,7 +344,7 @@ attach*)
     live="--config"
 
     if [ -z "$target" ]; then
-        echo "Error determining pool storage directory: '$pool'" >&2
+        echo "$PNAME Error determining pool storage directory: '$pool'" >&2
         exit 1
     fi
     if [ -z "$name" ]; then
