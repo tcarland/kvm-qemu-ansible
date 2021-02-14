@@ -48,7 +48,7 @@ usage="
 Create and manage KVM infrastructure from JSON Manifests.
 
 Synopsis:
-  $PNAME [options] <action> <kvm-manifest.json> 
+  $PNAME [options] <action> <manifest.json> 
 
 Options:
   -K|--keep-disks    : On 'delete' volumes will kept.
@@ -66,8 +66,9 @@ Options:
    <manifest.json    : Name of JSON manifest file.
 
 Actions: 
+  config            : Create a new base config template.
   build             : Build VMs defined by the manifest.
-                      Clones a source VM and configures DnsMasq.
+                      Clones a source VM and configures DnsMasq
   start             : Start all VMs in the manifest.
   stop              : Stop all VMs in the manifest.
   delete            : Delete all VMs defined by the manifest.
@@ -574,6 +575,80 @@ setresource*)
         done
     done
     ;;
+
+config)
+    if [ -z "$manifest" ]; then
+        echo "$PNAME Error: JSON manifest not provided."
+        echo "$usage"
+        exit 1
+    fi
+
+    if [ -e $manifest ]; then
+        echo "$PNAME Error: Cannot write config, manifest '$manifest' already exists."
+        exit 2
+    fi
+
+    cat >>$manifest <<EOF
+[
+    {
+        "host" : "host01",
+        "vmspecs" : [
+            {
+                "name" : "kvm01",
+                "description" : "template"
+                "hostname" : "kvmh01.cluster.internal",
+                "ipaddress" : "10.10.10.11",
+                "vcpus" : 1,
+                "memoryGb" : 1,
+                "maxMemoryGb" : 1,
+                "numDisks": 0,
+                "diskSize" : 0
+            },
+            {
+                "name" : "kvm02",
+                "description" : "template"
+                "hostname" : "kvmh02.cluster.internal",
+                "ipaddress" : "10.10.10.12",
+                "vcpus" : 1,
+                "memoryGb" : 1,
+                "maxMemoryGb" : 1,
+                "numDisks": 0,
+                "diskSize" : 0
+            }
+        ]
+    },
+    {
+        "host" : "host02",
+        "vmspecs" : [
+            {
+                "name" : "kvm03",
+                "description" : "template"
+                "hostname" : "kvmh03.cluster.internal",
+                "ipaddress" : "10.10.10.13",
+                "vcpus" : 1,
+                "memoryGb" : 1,
+                "maxMemoryGb" : 1,
+                "numDisks": 0,
+                "diskSize" : 0
+            },
+            {
+                "name" : "kvm04",
+                "description" : "template"
+                "hostname" : "kvmh04.cluster.internal",
+                "ipaddress" : "10.10.10.14",
+                "vcpus" : 1,
+                "memoryGb" : 1,
+                "maxMemoryGb" : 1,
+                "numDisks": 0,
+                "diskSize" : 0
+            }
+        ]
+    }
+]
+EOF
+echo "$PNAME created a new manifest configuration as '$manifest'"
+;;
+
 
 *)
     echo "$PNAME Error: Action not recognized"
