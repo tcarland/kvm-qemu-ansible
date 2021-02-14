@@ -52,8 +52,15 @@ fi
 # ------------------------------------
 
 usage="
-A command-line tool for manipulating KVM-based virtual machines 
+A command-line tool for manipulating KVM based virtual machines 
 wrapping the use of kvm tools 'virsh', 'virt-install', and 'virt-clone'.
+
+This is ntended for automation and scripting of kvm management with 
+some sane defaults for simplifying usage.
+
+The parameters all mirror 'virsh' closely and most virsh options are 
+either overloaded or passed through directly to virsh allowing 'kvmsh' 
+to be used in place of 'virsh'.
 
 Synopsis:
   $PNAME [options] <action> <name> 
@@ -512,12 +519,12 @@ status)
     ;;
 
 # --- PASSTHROUGH OPERATIONS to virsh
-start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|define|net*)
+start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|define|dom*|checkpoint-*|net*|iface-*|nwfilter-*)
     if [ $dryrun -gt 0 ]; then
-        ( $virsh $action $name )
+        ( $virsh $action $name $args )
         rt=$?
     else
-        echo "( $virsh $action $name )"
+        echo "( $virsh $action $name $args )"
     fi
     ;;
 
