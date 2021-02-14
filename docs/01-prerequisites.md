@@ -114,3 +114,8 @@ used up front to bootstrap the cluster by running the necessary Ansible
 playbooks, and as such, requires SSH key access to all nodes. 
 
 ## KVM Role Account
+
+Best practice is to use a role-account as the user with access rights to 
+manage KVM hosts. Just as in Ansible, the mgmt tool requires ssh hostkey 
+access to all nodes. There is no need to use 'root' for managing virtual 
+machines.
