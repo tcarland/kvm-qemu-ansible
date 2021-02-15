@@ -19,7 +19,7 @@ centos="centos7.0"
 centos7="CentOS-7-x86_64-Minimal-2003.iso"
 
 pool="default"
-network="bridge=br0"  # bridge=virbr0 is the libvirt default NAT interface
+network="bridge=br0"  # bridge=virbr0 is the default NAT interface
 ostype="linux"
 osvar="$ubuntu"
 image="$focal"
@@ -259,6 +259,12 @@ while [ $# -gt 0 ]; do
         -f|--disk-format|--format)
             format="$2"
             shift
+            if [[ "$format" == "qcow2" || "$format" == "raw" ]]; then
+                echo "$PNAME set disk typed as '$format'"
+            else
+                echo "$PNAME Error, invalid format type '$format'"
+                exit 1
+            fi
             ;;
         -G|--graphics)
             graphics="$2"
