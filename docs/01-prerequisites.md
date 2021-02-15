@@ -20,20 +20,20 @@ lscpu | grep vmx
 
 ## Configuring Storage
 
-  The Ansible configuration provides two storage options to our cluster.
+  The Ansible configuration accounts for two storage options to the cluster.
 The first is the *Primary* storage pool used to store VM's local to a given
-node. Ideally we make use of local attached disks in a RAID10 or RAID5
-configuration. Technically, any form of underlying storage can be used, but as
-these are 'node-local' VMs, using local storage is preferred for performance.
-The primary storage pool is used as the *default* storage pool for creating VM's.
+node. Ideally, we make use of local attached disks in a *RAID10* or *RAID5*
+configuration. Technically, any form of underlying storage can be used, but 
+using local storage is better for performance. The primary storage pool is 
+used as the *default* storage pool for creating VM's on a given node.
 
   Additionally, an optional *secondary* storage can be configured as a NFS
 mount shared across all nodes that would be used to store source VMs, snapshots
-and/or clones. The pattern provided utilizes a set 'golden' images to act as
-source vm's which is discussed later.  
+and/or clones. The pattern provided utilizes a *golden image* to act as the
+source vm, which is discussed in *operations* document.  
 
-  The provided Ansible will configure the nfs_server and mounts accordingly,
-but relies on the system storage devices to be already exist. The default
+  The provided Ansible will configure the NFS Server and mounts accordingly,
+but relies on the system storage devices to already exist. The default
 example uses a local data volume mount for all nodes  of */data01* making
 */data01/primary* the location of our default storage pool. It is important
 that the same path is used across all nodes, which is also deployed by Ansible.
@@ -96,3 +96,26 @@ BRIDGE=br0
 
 Once Networking and Storage are configured, we can install KVM via Ansible
 described in the next readme.
+
+
+## Ansible requirements 
+
+Ansible should be the only package requirement needed for running the 
+playbooks, which in turn installs the required KVM related packages as 
+defined by *roles/kvm-qemu/vars/main.yml*. The playbooks currently target and 
+have been tested against RHEL/CentOS 7 and Ubuntu 20.04 Focal using 
+Ansible version 2.9. 
+
+## Management plane
+
+Preferred architecture involves having a pair of master nodes that 
+serve as the management plane for the cluster. A master node would be 
+used up front to bootstrap the cluster by running the necessary Ansible 
+playbooks, and as such, requires SSH key access to all nodes. 
+
+## KVM Role Account
+
+Best practice is to use a role-account as the user with access rights to 
+manage KVM hosts. Just as in Ansible, the mgmt tool requires ssh hostkey 
+access to all nodes. There is no need to use 'root' for managing virtual 
+machines.

@@ -9,17 +9,17 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v20.12"
+VERSION="v21.01"
 
 # ------------------------------------
 # defaults
-centos="centos7.0"
-centos7="CentOS-7-x86_64-Minimal-2003.iso"
 ubuntu="ubuntu20.04"
 focal="http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/"
+centos="centos7.0"
+centos7="CentOS-7-x86_64-Minimal-2003.iso"
 
 pool="default"
-network="bridge=br0"  # bridge=virbr0 is the libvirt default NAT interface
+network="bridge=br0"  # bridge=virbr0 is the default NAT interface
 ostype="linux"
 osvar="$ubuntu"
 image="$focal"
@@ -49,12 +49,18 @@ if [ -n "$KVMSH_DEFAULT_IMAGE" ]; then
     image="$KVMSH_DEFAULT_IMAGE"
 fi
 
-
 # ------------------------------------
 
 usage="
-A command-line tool for manipulating KVM-based virtual machines 
+A command-line tool for manipulating KVM based virtual machines 
 wrapping the use of kvm tools 'virsh', 'virt-install', and 'virt-clone'.
+
+This is ntended for automation and scripting of kvm management with 
+some sane defaults for simplifying usage.
+
+The parameters all mirror 'virsh' closely and most virsh options are 
+either overloaded or passed through directly to virsh allowing 'kvmsh' 
+to be used in place of 'virsh'.
 
 Synopsis:
   $PNAME [options] <action> <name> 
@@ -253,6 +259,12 @@ while [ $# -gt 0 ]; do
         -f|--disk-format|--format)
             format="$2"
             shift
+            if [[ "$format" == "qcow2" || "$format" == "raw" ]]; then
+                echo "$PNAME set disk typed as '$format'"
+            else
+                echo "$PNAME Error, invalid format type '$format'"
+                exit 1
+            fi
             ;;
         -G|--graphics)
             graphics="$2"
@@ -345,7 +357,7 @@ attach*)
     live="--config"
 
     if [ -z "$target" ]; then
-        echo "Error determining pool storage directory: '$pool'" >&2
+        echo "$PNAME Error determining pool storage directory: '$pool'" >&2
         exit 1
     fi
     if [ -z "$name" ]; then
@@ -513,12 +525,12 @@ status)
     ;;
 
 # --- PASSTHROUGH OPERATIONS to virsh
-start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|define|net*)
+start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|define|dom*|checkpoint-*|net*|iface-*|nwfilter-*)
     if [ $dryrun -gt 0 ]; then
-        ( $virsh $action $name )
+        ( $virsh $action $name $args )
         rt=$?
     else
-        echo "( $virsh $action $name )"
+        echo "( $virsh $action $name $args )"
     fi
     ;;
 
