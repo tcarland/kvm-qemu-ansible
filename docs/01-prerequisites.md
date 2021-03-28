@@ -18,6 +18,12 @@ features. Ensure this extension is enabled for all nodes.
 lscpu | grep vmx
 ```
 
+Kernel options for *intel_iommu* should be enabled. The libvirt tool called 
+`virt-host-validate` can be used to verify platform settings and the iommu 
+setting. For ubuntu systems, edit */etc/default/grub* to add the string 
+*intel_iommu=on* to the GRUB_CMDLINE_LINUX_DEFAULT option and run 
+`sudo update-grub` to affect the change.
+
 ## Configuring Storage
 
   The Ansible configuration accounts for two storage options to the cluster.

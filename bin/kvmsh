@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v21.01"
+VERSION="v21.02"
 
 # ------------------------------------
 # defaults
@@ -80,9 +80,9 @@ Options:
   -N|--network  <if>      : KVM Network, default is '$network'.
   -m|--memory   <Mib>     : Memory allocation in Mb and optionally max memory.
                             eg. '--memory 1024' or '--memory $memory' 
-  -o|--os <ostype>        : Set virsh 'osvariant' for create. 
+  -o|--os <ostype>        : Set virsh 'osvariant' for create. Default=$osvar 
   -p|--pool    <name>     : Storage pool to use, if not '$pool'.
-  -u|--uri     <uri>      : Set the KVM connect uri, default is '$virt_uri'.
+  -u|--uri     <uri>      : Set the KVM connect uri. Default is '$virt_uri'.
   -V|--version            : Show version info and exit. 
 
    <action>               : VM operation to perform, see below. 
@@ -696,6 +696,39 @@ pool-autostart)
     fi
     ;;
 
+# --- START POOLS
+pool-start|start-pool)
+    if [ -n "$name" ]; then 
+        pool="$name"
+    fi
+
+    if pool_is_active $pool; then
+        echo " -> Storage pool '$pool' already started.."
+        rt=0
+    else
+        echo "$PNAME Starting storage pool '$pool'.."
+        if [ $dryrun -gt 0 ]; then
+            ( $virsh pool-start $pool )
+            rt=$?
+        fi
+    fi
+    ;;
+
+# --- STOP POOLS
+pool-stop|stop-pool)
+    if [ -n "$name" ]; then
+        pool="$name"
+    fi
+
+    if pool_is_active $pool; then
+        echo "$PNAME Stopping storage pool '$pool'"
+        if [ $dryrun -gt 0 ]; then
+            ( $virsh pool-stop $pool )
+            rt=$?
+        fi
+    fi
+    ;;
+
 # --- DELETE POOLS
 # this delete avoids pool-delete destructiveness by only undefining
 pool-delete|delete-pool)
@@ -704,13 +737,14 @@ pool-delete|delete-pool)
     fi
 
     if pool_is_active $pool; then
-        echo "Stopping pool '$pool'.."
+        echo "$PNAME Stopping storage pool '$pool'.."
         if [ $dryrun -gt 0 ]; then
             ( $virsh pool-destroy $pool )
         fi
     fi
 
     if [ $dryrun -gt 0 ]; then
+        echo "$PNAME Deleting storage pool '$pool'.."
         ( $virsh pool-undefine $pool )
         rt=$?
     fi

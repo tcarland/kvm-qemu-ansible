@@ -1,12 +1,37 @@
 KVM Operations
 ===============
 
-  Once the Ansible playbook has run, all hosts should be configured 
-with a KVM Hypervisor, a network bridge, and optionally a NFS share 
-for secondary storage. The Ansible does not, however, configure any 
-storage pools or networking on the nodes. The networking should 
-already be configured before continuing with these steps to configure 
-the storage pools.
+KVM Operation guide for managing VMs across a KVM Cluster.
+
+<br>
+
+--- 
+
+# Table Of Contents
+
+- [Overview](#overview)
+- [Requirements](#requirements)
+- [Storage Pools](#storage-pools)
+- [Creating A Base VM](#creating-a-base-vm-image)
+- [Building VirtualMachines](#building-vms)
+- [Starting VMs and Setting Hostnames](#starting-vms-and-setting-hostnames)
+- [Modifying Existing VMs](#modifying-existing-vms)
+- [Stop vs Destroy vs Delete](#stop-vs-destroy-vs-delete)
+- [Deleting Virtual Machines Manually](#deleting-virtual-machines-manually)
+- [Destroying Virtual Machines by Manifest](#destroying-virtual-machines-by-manifest)
+- [Validate Host Resources](#validate-host-resources)
+  -[Create a Consolidated Manifest](#create-a-consolidated-manifest)
+- [Migrating Virtual Machines in Offline Mode](#migrating-virtual-machines-in-offline-mode)
+
+
+## Overview
+
+  Once the Ansible playbooks have successfully installed KVM, all 
+hosts should be configured with a KVM Hypervisor, a network bridge, 
+and optionally a NFS share for secondary storage. The playbooks do 
+not, however, configure storage pools or networking on the nodes. The 
+networking should already be configured before continuing with these 
+steps to configure the storage pools.
 
   Additionally, there are two management scripts provided for managing
 Virtual Machines across the infrastructure.
@@ -66,11 +91,9 @@ The requirements for running the tools are:
   run from. This is used to provide DNS configuration and Static IP assignments 
   for the cluster via DHCP.
 
-## DnsMasq
-
-The user running the kvm-mgr.sh script should have sudo rights with NOPASSWD set.
-The script will automatically configure the DHCP static lease based on the
-provided manifest on build.
+- The user running the kvm-mgr.sh script should have sudo rights with NOPASSWD set.
+  The script will automatically configure the DHCP static lease based on the
+  provided manifest on build.
 
 ## Storage Pools
 
@@ -207,7 +230,7 @@ running *DnsMasq*, which is used to statically assign IP's to the VMs.
 `kvm-mgr.sh` will update dnsmasq accordingly with the lease info needed
 for statically assigning IP's to the new VMs as well as /etc/hosts.
 
-## Starting VMs - Setting Hostnames
+## Starting VMs and Setting Hostnames
 
 Once built, the VMs can be started by via the 'start' action:
 ```
@@ -222,7 +245,7 @@ and set the hostname accordingly.
  $ ./bin/kvm-mgr.sh sethostnames manifest.json
 ```
 
-## Modifying existing VMs
+## Modifying Existing VMs
 
 Some changes can be done on live VM's, accomplished individually
 using the `kvmsh` utility. Namely, increasing the memory for a given VM,
@@ -252,7 +275,7 @@ Note that any adjustments to live instances that wish to be persisted should
 also be updated in the corresponding manifest.
 
 
-## Stop vs. Destroy vs. Delete
+## Stop vs Destroy vs Delete
 
 Terminology in KVM land, namely virsh from libvirt, defines the term `destroy`
 for terminating VMs and is synonymous to `stop`. These actions also work
@@ -268,7 +291,7 @@ this is true for our 'kvmsh' wrapper as well. Running `delete` from
 *kvm-mgr.sh* using a manifest, however, will automatically remove all volumes
 unless the `--keep-disks` option is provided.
 
-## Manually deleting a VM via kvmsh:
+## Deleting Virtual Machines manually
 
  If the environment is wiped or vms deleted manually, the volumes
 might persist in the storage pool without having the VM defined.
@@ -294,58 +317,58 @@ for x in $( kvmsh vol-list | grep $vmname | \
     awk '{ print $1 }' ); do kvmsh vol-delete $x; done
 ```
 
-## Destroying VMs from Manifest
+## Deleting Virtual Machines by Manifest
 
-Create a JSON manifest containing the VMs in question.
-Verify the manifest is accurate since we are permanently deleting.
-```
-$ cat tdh-datanodes.json
-[
-    {
-        "host" : "t04.tdh.internal",
-        "vmspecs" : [
-            {
-                "name" : "tdh-d03",
-                "description" : "TDH Datanode"
-                "hostname" : "tdh-d03.tdh.internal",
-                "ipaddress" : "172.30.10.193",
-                "vcpus" : 2,
-                "memoryGb" : 8,
-                "maxMemoryGb" : 12,
-                "numDisks" : 1,
-                "diskSize" : 60
-            }
-        ]
-    }
-]
-```
+- Create a JSON manifest containing the VMs in question.
+  Verify the manifest is accurate since we are permanently deleting.
+  ```
+  $ cat tdh-datanodes.json
+  [
+      {
+          "host" : "t04.tdh.internal",
+          "vmspecs" : [
+              {
+                  "name" : "tdh-d03",
+                  "description" : "TDH Datanode"
+                  "hostname" : "tdh-d03.tdh.internal",
+                  "ipaddress" : "172.30.10.193",
+                  "vcpus" : 2,
+                  "memoryGb" : 8,
+                  "maxMemoryGb" : 12,
+                  "numDisks" : 1,
+                  "diskSize" : 60
+              }
+          ]
+      }
+  ]
+  ```
 
- Now delete the VMs, noting all disks are also removed.
-```
-$ ~/bin/kvm-mgr.sh delete tdh-datanodes.json
-WARNING! 'delete' action will remove all VM's!
-    (Consider testing with --dryrun option)
-Are you certain you wish to continue?  [y/N] y
-( ssh t04 'kvmsh delete tdh-d03' )
-Domain tdh-d03 has been undefined
-( ssh t04 'kvmsh vol-delete "/data01/primary/tdh-d03-vda.img"' )
-Vol /data01/primary/tdh-d03-vda.img deleted.
-( ssh t04 'kvmsh vol-delete "/data01/primary/tdh-d03-vdb.img"' )
-Vol /data01/primary/tdh-d03-vdb.img deleted.
-kvmsh Finished.
-```
+- Now delete the VMs, noting all disks are also removed.
+  ```
+  $ ~/bin/kvm-mgr.sh delete tdh-datanodes.json
+  WARNING! 'delete' action will remove all VM's!
+      (Consider testing with --dryrun option)
+  Are you certain you wish to continue?  [y/N] y
+  ( ssh t04 'kvmsh delete tdh-d03' )
+  Domain tdh-d03 has been undefined
+  ( ssh t04 'kvmsh vol-delete "/data01/primary/tdh-d03-vda.img"' )
+  Vol /data01/primary/tdh-d03-vda.img deleted.
+  ( ssh t04 'kvmsh vol-delete "/data01/primary/tdh-d03-vdb.img"' )
+  Vol /data01/primary/tdh-d03-vdb.img deleted.
+  kvmsh Finished.
+  ```
 
-## Delete a VM without destroying assets.  
-A given VM under management of libvirt internally stores the XML definition
-of the VM which also defines the attached volumes. The individual VM
-definitions can be exported via `kvmsh dumpxml <name> > name.xml` to save
-the definition, as well as using the manifest to perform the action across
-multiple nodes. Note the *kvm-mgr.sh* switch `--keep-disks` to
-save the volumes.
-```
-$ ./bin/kvm-mgr.sh dumpxml tdh-datanodes.json
-$ ./bin/kvm-mgr.sh --keep-disks delete tdh-datanodes.json
-```
+- Delete a VM without destroying assets.  
+  A given VM under management of libvirt internally stores the XML definition
+  of the VM which also defines the attached volumes. The individual VM
+  definitions can be exported via `kvmsh dumpxml <name> > name.xml` to save
+  the definition, as well as using the manifest to perform the action across
+  multiple nodes. Note the *kvm-mgr.sh* switch `--keep-disks` to
+  save the volumes.
+  ```
+  $ ./bin/kvm-mgr.sh dumpxml tdh-datanodes.json
+  $ ./bin/kvm-mgr.sh --keep-disks delete tdh-datanodes.json
+  ```
 
 ## Validate Host Resources
 
@@ -397,9 +420,9 @@ t05 :
  ```
 
 
-## Migrating VMs between Hosts Manually (Offline mode)
+## Migrating Virtual Machines in Offline Mode
 
-Live VM Migration is possible with libvirt and KVM, but not yet covered by
+Live VM Migration is possible with libvirt and KVM, but not covered by
 this document. The following describes how to migrate VM's offline.  
 
 - Of course, offline migration implies the VM should be stopped first.
@@ -436,4 +459,4 @@ Steps to Migrate.
     kvmsh start vmname
     ```
 
-Lastly be sure to update the VM Manifest accordingly.
+Lastly, update the VM Manifest accordingly.

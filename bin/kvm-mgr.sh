@@ -22,7 +22,7 @@
 #  ]
 #
 PNAME=${0##*\/}
-VERSION="v21.01"
+VERSION="v21.02"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -59,7 +59,7 @@ Options:
   -n|--dryrun        : Enable DRYRUN, Nothing is executed.
   -s|--srcvm <name>  : Source VM to clone. Default is '$srcvm'.
   -x|--srcxml <file> : Source XML to define and use as the source VM.
-  -X|--noprompt      : Disables safety prompt on delete.
+  -X|--noprompt      : Disables interactive prompt on delete.
   -V|--version       : Show version info and exit.
 
    <action>          : Action to perform: build|start|stop|delete 
