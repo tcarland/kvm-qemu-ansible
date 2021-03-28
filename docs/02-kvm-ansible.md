@@ -9,6 +9,7 @@ the primary storage pool (and optional NFS Server) should already be created and
 mounted. Additionally a network bridge for *br0* should be configured as
 described in the [01-prerequisites.md](docs/01-prerequisites.md) document.
 
+
 ## Configure Inventory
 
   The following inventory settings from *inventory/$env/group_vars/all/vars*
@@ -17,7 +18,7 @@ Address ranges. The following inventory example uses a common role-account calle
 *tdh* for managing KVM and is added to the three primary groups needed.
 
 **inventory/$env/group_vars/all/vars**
-```
+```yaml
 ---
 kvm_users:
  - tca
@@ -48,7 +49,7 @@ dhcp_router_ip: '10.10.5.1'
 
 SSH Keys are defined for the users to provide easy access to all nodes and
 future VMs in the Ansible *vault* file with the following 'dict' syntax:
-```
+```yaml
 ---
 system_ssh_ids:
   tdh:

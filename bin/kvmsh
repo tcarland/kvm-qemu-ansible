@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v21.01"
+VERSION="v21.03"
 
 # ------------------------------------
 # defaults
@@ -80,9 +80,9 @@ Options:
   -N|--network  <if>      : KVM Network, default is '$network'.
   -m|--memory   <Mib>     : Memory allocation in Mb and optionally max memory.
                             eg. '--memory 1024' or '--memory $memory' 
-  -o|--os <ostype>        : Set virsh 'osvariant' for create. 
+  -o|--os <ostype>        : Set virsh 'osvariant' for create. Default=$osvar 
   -p|--pool    <name>     : Storage pool to use, if not '$pool'.
-  -u|--uri     <uri>      : Set the KVM connect uri, default is '$virt_uri'.
+  -u|--uri     <uri>      : Set the KVM connect uri. Default is '$virt_uri'.
   -V|--version            : Show version info and exit. 
 
    <action>               : VM operation to perform, see below. 
@@ -92,6 +92,8 @@ Actions:
   create|delete  <name>  : Create or delete a VM (will not delete volumes).
   start|stop     <name>  : Start or stop a VM. 
   create-pool <dir> <n>  : Creates a storage pool named <n> for a given dir.
+  start-pool     <name>  : Activate an offline storage pool by name.
+  stop-pool      <name>  : Stop or deactivate a storage pool by name.
   delete-pool    <name>  : Removes a pool definition (will not delete dir).
   attach-disk    <name>  : Attach volumes to a vm (use -D and -d options).
   delete-vol     <name>  : Delete a volume (will delete the disk image).
@@ -262,7 +264,7 @@ while [ $# -gt 0 ]; do
             if [[ "$format" == "qcow2" || "$format" == "raw" ]]; then
                 echo "$PNAME set disk typed as '$format'"
             else
-                echo "$PNAME Error, invalid format type '$format'"
+                echo "$PNAME error, invalid format type '$format'"
                 exit 1
             fi
             ;;
@@ -300,7 +302,7 @@ while [ $# -gt 0 ]; do
             disksz="$2"
             val=${disksz%%[!0-9]*}
             if (( $val < $mindisksz )); then
-                echo "$PNAME Error: Disk Size is less than minimum $mindisksz G" >&2
+                echo "$PNAME error: disk size is less than minimum $mindisksz G" >&2
                 exit 1
             fi
             shift
@@ -357,11 +359,11 @@ attach*)
     live="--config"
 
     if [ -z "$target" ]; then
-        echo "$PNAME Error determining pool storage directory: '$pool'" >&2
+        echo "$PNAME error determining pool storage directory: '$pool'" >&2
         exit 1
     fi
     if [ -z "$name" ]; then
-        echo "$PNAME Error, no VM defined."
+        echo "$PNAME error, no VM defined."
         exit 1
     fi
 
@@ -385,7 +387,7 @@ attach*)
 
         rt=$?
         if [ $rt -ne 0 ]; then
-            echo "$PNAME Error in create_disk() '$img'" >&2
+            echo "$PNAME error in create_disk() '$img'" >&2
             break
         fi
 
@@ -394,7 +396,7 @@ attach*)
 
             rt=$?
             if [ $rt -ne 0 ]; then
-                echo "$PNAME Error in attach-disk" >&2
+                echo "$PNAME error in attach-disk" >&2
                 break
             fi
         else
@@ -408,12 +410,12 @@ create)
     target="${poolmap[$pool]}"
 
     if [ -z "$target" ]; then
-        echo "$PNAME Error determining pool storage directory for '$pool'" >&2
+        echo "$PNAME error determining pool storage directory for '$pool'" >&2
         exit 1
     fi
 
     if [ -z "$name" ]; then
-        echo "$PNAME Error no vm name defined." >&2
+        echo "$PNAME error no vm name defined." >&2
         exit 1
     fi
 
@@ -424,7 +426,7 @@ create)
 
     rt=$?
     if [ $rt -ne 0 ]; then
-        echo "$PNAME Error in create_disk()" >&2
+        echo "$PNAME error in create_disk()" >&2
         exit $rt
     fi
 
@@ -480,12 +482,12 @@ clone)
     file="$path/$target-vda.img"
 
     if [ -z "$path" ]; then
-        echo "$PNAME Error determining storage path" >&2
+        echo "$PNAME error determining storage path" >&2
         exit 1
     fi
 
     if [ -z "$name" ] || [ -z "$target" ]; then
-        echo "$PNAME Error: no targets provided."
+        echo "$PNAME error: no targets provided."
         echo "$usage"
         exit 1
     fi
@@ -505,7 +507,7 @@ clone)
 # --- MAC-ADDRESS
 get-mac*|mac-addr*)
     if [ -z "$name" ]; then
-        echo "$PNAME Error: no target provided."
+        echo "$PNAME error: no target provided."
         echo "$usage"
         exit 1
     fi
@@ -537,7 +539,7 @@ start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|de
 # --- SET MEMORY
 setmem|setmaxmem)
     if [ -z "$name" ] || [ -z "$args" ]; then
-        echo "$PNAME Error in arguments"
+        echo "$PNAME error in arguments"
         exit 1
     fi
     # flip args
@@ -547,7 +549,7 @@ setmem|setmaxmem)
 
     if is_running $name; then
         if [[ $action =~ ^setmaxmem.*$ ]]; then
-            echo "$PNAME Error: VM must off or suspended to change Max Memory" >&2
+            echo "$PNAME error: VM must off or suspended to change Max Memory" >&2
             exit 1
         fi
         live="--live"
@@ -564,7 +566,7 @@ setmem|setmaxmem)
 # --- SET VCPUS
 setvcpu*)
     if [ -z "$name" ] || [ -z "$args" ]; then
-        echo "$PNAME Error with setvcpus arguments"
+        echo "$PNAME error with setvcpus arguments"
         exit 1
     fi
     # flip args
@@ -588,7 +590,7 @@ setvcpu*)
 # --- STOP VMS
 stop|shutdown|destroy)
     if [ -z "$name" ]; then
-        echo "$PNAME Error: no <name> provided."
+        echo "$PNAME error: no <name> provided."
         exit 1
     fi
 
@@ -599,7 +601,7 @@ stop|shutdown|destroy)
             rt=$?
         fi
     else
-        echo "VM does not appear to be running.."
+        echo "$PNAME error, vm does not appear to be running.."
         rt=1
     fi
     ;;
@@ -607,7 +609,7 @@ stop|shutdown|destroy)
 # --- DELETE VMS
 delete|undefine)
     if [ -z "$name" ]; then
-        echo "$PNAME Error: no <name> provided."
+        echo "$PNAME error: no <name> provided."
         exit 1
     fi
 
@@ -638,7 +640,7 @@ vol-delete|delete-vol)
 # --- CREATE STORAGE POOL
 pool-create|create-pool)
     if [ -z "$name" ]; then
-        echo "$PNAME Error, directory name not provided."
+        echo "$PNAME error, directory name not provided."
         exit 1
     fi
 
@@ -685,7 +687,7 @@ pool-create|create-pool)
 # --- SET POOL AUTOSTART
 pool-autostart)
     if [ -z "$name" ]; then
-        echo "$PNAME Error, directory name not provided."
+        echo "$PNAME error, directory name not provided."
         exit 1
     fi
 
@@ -693,6 +695,39 @@ pool-autostart)
         ( $virsh pool-autostart $name )
     else
         echo "( $virsh pool-autostart $name )"
+    fi
+    ;;
+
+# --- START POOLS
+pool-start|start-pool)
+    if [ -n "$name" ]; then 
+        pool="$name"
+    fi
+
+    if pool_is_active $pool; then
+        echo " -> Storage pool '$pool' already started.."
+        rt=0
+    else
+        echo "$PNAME starting storage pool '$pool'.."
+        if [ $dryrun -gt 0 ]; then
+            ( $virsh pool-start $pool )
+            rt=$?
+        fi
+    fi
+    ;;
+
+# --- STOP POOLS
+pool-stop|stop-pool)
+    if [ -n "$name" ]; then
+        pool="$name"
+    fi
+
+    if pool_is_active $pool; then
+        echo "$PNAME stopping storage pool '$pool'"
+        if [ $dryrun -gt 0 ]; then
+            ( $virsh pool-destroy $pool )
+            rt=$?
+        fi
     fi
     ;;
 
@@ -704,13 +739,14 @@ pool-delete|delete-pool)
     fi
 
     if pool_is_active $pool; then
-        echo "Stopping pool '$pool'.."
+        echo "$PNAME stopping storage pool '$pool'.."
         if [ $dryrun -gt 0 ]; then
             ( $virsh pool-destroy $pool )
         fi
     fi
 
     if [ $dryrun -gt 0 ]; then
+        echo "$PNAME deleting storage pool '$pool'.."
         ( $virsh pool-undefine $pool )
         rt=$?
     fi
@@ -719,7 +755,7 @@ pool-delete|delete-pool)
 # -- LIST POOLS
 pool-list|list-pool*)
     if [ ${#poolmap[@]} -eq 0 ]; then
-        echo "$PNAME: No pools found or defined.."
+        echo "$PNAME no pools found or defined.."
         exit 0
     fi
 
@@ -752,7 +788,7 @@ vol-list|list-vol*)
     ;;
 
 *)
-    echo "$PNAME Action missing or not recognized."
+    echo "$PNAME action missing or not recognized."
     echo "$usage"
     ;;
 esac
