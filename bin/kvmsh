@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v21.02"
+VERSION="v21.03"
 
 # ------------------------------------
 # defaults
@@ -92,6 +92,8 @@ Actions:
   create|delete  <name>  : Create or delete a VM (will not delete volumes).
   start|stop     <name>  : Start or stop a VM. 
   create-pool <dir> <n>  : Creates a storage pool named <n> for a given dir.
+  start-pool     <name>  : Activate an offline storage pool by name.
+  stop-pool      <name>  : Stop or deactivate a storage pool by name.
   delete-pool    <name>  : Removes a pool definition (will not delete dir).
   attach-disk    <name>  : Attach volumes to a vm (use -D and -d options).
   delete-vol     <name>  : Delete a volume (will delete the disk image).

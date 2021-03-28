@@ -123,5 +123,5 @@ playbooks, and as such, requires SSH key access to all nodes.
 
 Best practice is to use a role-account as the user with access rights to 
 manage KVM hosts. Just as in Ansible, the mgmt tool requires ssh hostkey 
-access to all nodes. There is no need to use 'root' for managing virtual 
-machines.
+access to all nodes. There is no need to use the *root* accout for managing 
+virtual machines.

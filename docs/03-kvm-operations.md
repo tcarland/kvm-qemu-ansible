@@ -12,15 +12,17 @@ KVM Operation guide for managing VMs across a KVM Cluster.
 - [Overview](#overview)
 - [Requirements](#requirements)
 - [Storage Pools](#storage-pools)
-- [Creating A Base VM](#creating-a-base-vm-image)
-- [Building VirtualMachines](#building-vms)
+- [Creating A Base VM Image](#creating-a-base-vm-image)
+  - [Ubuntu Vms](#ubuntu-vms)
+  - [Local-Only VMs](#local-only-vms)
+- [Building Virtual Machines](#building-virtual-machines)
 - [Starting VMs and Setting Hostnames](#starting-vms-and-setting-hostnames)
 - [Modifying Existing VMs](#modifying-existing-vms)
 - [Stop vs Destroy vs Delete](#stop-vs-destroy-vs-delete)
 - [Deleting Virtual Machines Manually](#deleting-virtual-machines-manually)
 - [Destroying Virtual Machines by Manifest](#destroying-virtual-machines-by-manifest)
 - [Validate Host Resources](#validate-host-resources)
-  -[Create a Consolidated Manifest](#create-a-consolidated-manifest)
+  - [Create a Consolidated Manifest](#create-a-consolidated-manifest)
 - [Migrating Virtual Machines in Offline Mode](#migrating-virtual-machines-in-offline-mode)
 
 
@@ -196,7 +198,7 @@ this and some other items worth configuring into the base image:
 
 Once complete, the final step would be to stop the VM and acquire the
 XML Definition for use across all remaining nodes to define our source VM.
-```
+```sh
 $ kvmsh stop centos7
 $ kvmsh dumpxml centos7 > centos7.xml
 
@@ -208,7 +210,23 @@ $ kvmsh dumpxml centos7 > centos7.xml
 [admin-01]$ clush -g lab 'kvmsh define centos7.xml'
 ```
 
-## Building VMs
+### Ubuntu VMs
+
+Ubuntu installs using the console often require configuring *grub* 
+correctly for console access post-install.  Once the installer completes, 
+add `console=ttyS0` to */etc/default/grub* and run `update-grub` 
+accordingly.
+
+
+### Local-only VMs
+
+While this document covers running KVM nodes in a distributed fashion, 
+VMs can be created as local-only instances by using KVM's default NAT 
+interface (`--network "bridge=virbr0"`). This will create vms 
+reachable only from the local host.
+
+
+## Building Virtual Machines
 
   Building the environment is accomplished by providing the JSON manifest 
 to the `kvm-mgr.sh` script.
@@ -229,6 +247,7 @@ The **kvm-mgr** script should *always* be run from the admin host that is
 running *DnsMasq*, which is used to statically assign IP's to the VMs.
 `kvm-mgr.sh` will update dnsmasq accordingly with the lease info needed
 for statically assigning IP's to the new VMs as well as /etc/hosts.
+
 
 ## Starting VMs and Setting Hostnames
 
