@@ -723,7 +723,7 @@ pool-stop|stop-pool)
     if pool_is_active $pool; then
         echo "$PNAME Stopping storage pool '$pool'"
         if [ $dryrun -gt 0 ]; then
-            ( $virsh pool-stop $pool )
+            ( $virsh pool-destroy $pool )
             rt=$?
         fi
     fi
