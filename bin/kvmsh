@@ -19,7 +19,7 @@ centos="centos7.0"
 centos7="CentOS-7-x86_64-Minimal-2003.iso"
 
 pool="default"
-network="bridge=br0"  # bridge=virbr0 is the default NAT interface
+network="bridge=br0"  # bridge=virbr0 is the KVM default local NAT interface
 ostype="linux"
 osvar="$ubuntu"
 image="$focal"
@@ -133,7 +133,7 @@ list_all_pools()
 }
 
 
-is_running()
+vm_is_running()
 {
     local vm="$1"
     state=$( $virsh list | grep $vm | awk '{ print $3 }' )
@@ -375,7 +375,7 @@ attach*)
         exit 1
     fi
 
-    if is_running $name; then
+    if vm_is_running $name; then
         live="--live"
     fi
 
@@ -522,7 +522,7 @@ status)
         exit 2
     fi
 
-    is_running $name
+    vm_is_running $name
     rt=$?
     ;;
 
@@ -547,7 +547,7 @@ setmem|setmaxmem)
     name="$args"
     live="--config"
 
-    if is_running $name; then
+    if vm_is_running $name; then
         if [[ $action =~ ^setmaxmem.*$ ]]; then
             echo "$PNAME error: VM must off or suspended to change Max Memory" >&2
             exit 1
@@ -574,7 +574,7 @@ setvcpu*)
     name="$args"
     live="--config"
 
-    if is_running $name; then
+    if vm_is_running $name; then
         live="--live"
     fi
 
@@ -594,7 +594,7 @@ stop|shutdown|destroy)
         exit 1
     fi
 
-    if is_running $name; then
+    if vm_is_running $name; then
         echo "$PNAME stopping '$name'.."
         if [ $dryrun -gt 0 ]; then
             ( $virsh destroy $name )
@@ -613,7 +613,7 @@ delete|undefine)
         exit 1
     fi
 
-    if is_running $name; then
+    if vm_is_running $name; then
         echo "$PNAME stopping '$name'.."
         if [ $dryrun -gt 0 ]; then
             ( $virsh destroy $name )
