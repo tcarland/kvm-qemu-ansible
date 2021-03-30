@@ -26,7 +26,7 @@ VERSION="v21.03"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
-srcvm="ubuntu20.04"
+srcvm="ubuntu"
 srcxml=
 manifest=
 
