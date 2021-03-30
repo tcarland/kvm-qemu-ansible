@@ -9,12 +9,13 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v21.03"
+VERSION="v21.04"
 
 # ------------------------------------
 # defaults
-ubuntu="ubuntu20.04"
-focal="http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/"
+ubuntu="ubuntu"
+#focal="http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/"
+focal="ubuntu-20.04.1-legacy-server-amd64.iso"
 centos="centos7.0"
 centos7="CentOS-7-x86_64-Minimal-2003.iso"
 
@@ -34,6 +35,7 @@ mindisksz=5
 disknum=0
 dryrun=1
 cdrom=1
+uefi=0
 format="raw"  # or qcow2
 
 virt_uri="qemu:///system"
@@ -83,6 +85,7 @@ Options:
   -o|--os <ostype>        : Set virsh 'osvariant' for create. Default=$osvar 
   -p|--pool    <name>     : Storage pool to use, if not '$pool'.
   -u|--uri     <uri>      : Set the KVM connect uri. Default is '$virt_uri'.
+  -U|--no-uefi            : Disable UEFI VM support, which is enabled by default.
   -V|--version            : Show version info and exit. 
 
    <action>               : VM operation to perform, see below. 
@@ -330,6 +333,9 @@ while [ $# -gt 0 ]; do
             virt_uri="$2"
             shift
             ;;
+        -U|--no-uefi|nouefi|no-efi|noefi)
+            uefi=1
+            ;;
         'version'|-V|--version)
             echo "$version"
             exit 0
@@ -449,6 +455,9 @@ create)
       --os-type "$ostype" --os-variant "$osvar" \
       --disk "path=$diskimg" --network "$network")
 
+    if [ $uefi -eq 0 ]; then
+        cmdargs+=(--boot "uefi")
+    fi
     if [ $cdrom -eq 0 ]; then
         cmdargs+=(--cdrom "$srcimg")
     else
@@ -462,7 +471,7 @@ create)
             cmdargs+=(--graphics "$vnc" --noautoconsole)
         fi
     fi
-
+    
     if [ $dryrun -gt 0 ]; then
         ( virt-install --connect $virt_uri ${cmdargs[@]} )
         rt=$?
@@ -622,7 +631,7 @@ delete|undefine)
     fi
 
     if [ $dryrun -gt 0 ]; then
-        ( $virsh undefine $name )
+        ( $virsh undefine --nvram $name )
         rt=$?
     fi
     ;;

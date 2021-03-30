@@ -3,12 +3,12 @@
 yum_kvm_packages:
  - qemu-kvm
  - qemu-kvm-tools
- - qemu-efi
  - libvirt
  - libosinfo
  - virt-install
  - virt-top
  - libguestfs-tools
+ - edk2-ovmf
  - bridge-utils
  - ethtool
  - libxml2
