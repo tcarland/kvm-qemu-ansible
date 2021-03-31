@@ -8,6 +8,7 @@ yum_kvm_packages:
  - virt-install
  - virt-top
  - libguestfs-tools
+ - edk2-ovmf
  - bridge-utils
  - ethtool
  - libxml2
@@ -16,6 +17,8 @@ yum_kvm_packages:
 apt_kvm_packages:
  - qemu-kvm
  - qemu-utils
+ - qemu-efi
+ - ovmf
  - libvirt-daemon-system
  - libvirt-daemon-driver-storage-zfs
  - virtinst

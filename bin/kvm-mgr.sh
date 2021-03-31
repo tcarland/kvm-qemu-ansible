@@ -22,11 +22,11 @@
 #  ]
 #
 PNAME=${0##*\/}
-VERSION="v21.03"
+VERSION="v21.04"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
-srcvm="ubuntu20.04"
+srcvm="ubuntu"
 srcxml=
 manifest=
 
@@ -110,7 +110,7 @@ ask()
     done
 }
 
-is_defined()
+vm_is_defined()
 {
     local h="$1"
     local vm="$2"
@@ -124,7 +124,7 @@ is_defined()
     return 1
 }
 
-is_running()
+vm_is_running()
 {
     local h="$1"
     local vm="$2"
@@ -225,7 +225,7 @@ fi
 case "$action" in
 
 # --- BUILD Infrastructure
-build|create)
+build|create|clone)
     if [ -z "$manifest" ]; then
         echo "KVM Spec JSON not provided."
         echo "$usage"
@@ -271,7 +271,7 @@ build|create)
             ndisks=$( jq -r ".[$i].vmspecs | .[$v].numDisks" $manifest )
             dsize=$( jq -r ".[$i].vmspecs | .[$v].diskSize" $manifest )
 
-            if is_defined $host $name; then
+            if vm_is_defined $host $name; then
                 echo " -> VM '$name' already exists on host '$host', Skipping..."
             else
                 # Create VM
@@ -559,7 +559,7 @@ setresource*)
             mem=$( jq -r ".[$i].vmspecs | .[$v].memoryGb" $manifest )
             maxmem=$( jq -r ".[$i].vmspecs | .[$v].maxMemoryGb" $manifest )
 
-            if is_running $host $name; then
+            if vm_is_running $host $name; then
                 echo "Error, VM appears to be running, please stop first. Skipping host.."
                 continue
             fi

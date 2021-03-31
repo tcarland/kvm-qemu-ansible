@@ -13,7 +13,7 @@ KVM Operation guide for managing VMs across a KVM Cluster.
 - [Requirements](#requirements)
 - [Storage Pools](#storage-pools)
 - [Creating A Base VM Image](#creating-a-base-vm-image)
-  - [Ubuntu Vms](#ubuntu-vms)
+  - [Ubuntu Installs](#ubuntu-installs)
   - [Local-Only VMs](#local-only-vms)
 - [Building Virtual Machines](#building-virtual-machines)
 - [Starting VMs and Setting Hostnames](#starting-vms-and-setting-hostnames)
@@ -144,43 +144,45 @@ consistent across all nodes.
 
 ## Creating a Base VM Image
 
-  The managment script, `kvm-mgr.sh`, relies on a base VM image when building
-the VM's. This base images is used across all nodes to build the environment. By
-default, the scripts use a Centos7 ISO as source iso when creating VMs from
-scratch, but other ISO's can be provided by the `--image` command option to `kvmsh`
-or by setting KVMSH_DEFAULT_IMAGE in the environment.
+The managment script, `kvm-mgr.sh`, relies on a base VM image when building
+the VM's. This base images is used across all nodes to build the environment. 
+By default, the scripts use an Ubuntu 20.04 image as the source when creating 
+VMs from scratch, but other ISO's can be provided by the `--image` command 
+option to `kvmsh` or by setting KVMSH_DEFAULT_IMAGE in the environment.
 
-  Since the resulting base VM will be cloned by all nodes when building VM, the
-VM should be created on the Secondary Storage pool (NFS) to make it immediately 
+Since the resulting base VM will be cloned by all nodes when building VM, the
+VM should be created on the NFS Storage pool (secondary) to make it immediately 
 available to all hosts.
 
   When creating a new VM, the `kvmsh` script looks for the source ISO in a path
 relative to the storage pool in use, so we ensure the ISO is also stored in the
 same storage pool.
 ```
-$ ssh sm-01 'ls -l /secondary'
-total 2525812
--rw-r--r--. 1 root idps   987758592 Apr 21 15:34 CentOS-7-x86_64-Minimal-2003.iso
+$ ssh nfs01 'ls -l /kvm-secondary'
+total 10430984
+-rw-rw-r-- 1 libvirt-qemu kvm   855638016 Mar 29 19:36 ubuntu-20.04.1-legacy-server-amd64.iso
+-rw-rw-r-- 1 libvirt-qemu kvm  1215168512 Mar 29 07:27 ubuntu-20.04.2-live-server-amd64.iso
 ```
 
 The base VM can then be created on any node and pointed to the secondary pool.
 ```
-$ kvmsh --pool secondary --console create centos7
+$ kvmsh --pool secondary --console create ubuntu20.04
 ```
 
 This will attach to the console of the new VM to provide access to the
-ISO installer.  Note that the networking interface should be set to start
+installer.  Note that the networking interface should be set to start
 at boot with DHCP. Once complete, the VM will exist in our secondary pool:
 ```
 [idps@sm-01]$ ls -l /secondary
--rw-r--r--. 1 root root 42949672960 Apr 27 13:12 centos7-vda.img
--rw-r--r--. 1 root idps   987758592 Apr 21 15:34 CentOS-7-x86_64-Minimal-2003.iso
+total 8175440
+-rw-rw-r-- 1 tca tca  1215168512 Mar 29 07:27 ubuntu-20.04.2-live-server-amd64.iso
+-rw-r--r-- 1 tca tca 26843545600 Mar 28 06:26 ubuntu20.04-vda.img
 ```
 
 Another example using a larger boot disk (default is 40G)
 ```
 KVMSH_DEFAULT_IMAGE="CentOS-7-x86_64-Minimal-2003.iso"
-$ kvmsh --pool secondary --bootsize 80 --console create centos7-80
+$ kvmsh --pool secondary --bootsize 80 --console --os centos7 create centos7-80
 ```
 
 Once installed, we can add some additional requirements that are needed
@@ -196,47 +198,72 @@ this and some other items worth configuring into the base image:
 - Disable selinux if desired.
 - Disable NetworkManager if desired.
 
-Once complete, the final step would be to stop the VM and acquire the
+The final step would be to stop the VM and acquire the
 XML Definition for use across all remaining nodes to define our source VM.
 ```sh
-$ kvmsh stop centos7
-$ kvmsh dumpxml centos7 > centos7.xml
+$ kvmsh stop ubuntu20.04
+$ kvmsh dumpxml ubuntu20.04 > ubuntu2004.xml
 
-# copy centos7.xml to all hosts
-[admin-01]$ scp sm-01:centos7.xml .
-[admin-01]$ clush -g lab --copy centos7.xml
+# copy xml to all hosts
+$ clush -g lab --copy ubuntu2004.xml
 
 # Now we define our base VM across all nodes
-[admin-01]$ clush -g lab 'kvmsh define centos7.xml'
+$ clush -g lab 'kvmsh define ubuntu2004.xml'
 ```
 
-### Ubuntu VMs
+### Ubuntu Installs
 
 Ubuntu installs using the console often require configuring *grub* 
 correctly for console access post-install.  Once the installer completes, 
 add `console=ttyS0` to */etc/default/grub* and run `update-grub` 
-accordingly.
+accordingly. Ensure to enable the openSSH server during the install 
+process to ensure access to the vm.
+
+Ubuntu has a number of install options with varying degrees of 
+difficulty for installing with KVM and `virt-install`.
+
+- A Web-based install uses a *http* location as the `image` which means 
+  all assets are downloaded. For Ubuntu 20.04, for example, the web 
+  installer URL provided to `--image` would be set to 
+  `http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/`. 
+  This method is convienient but is likely to be deprecated in the near future.
+
+- Ubuntu live iso images place the iso boot kernel (vmlinuz) in a 
+  subdirectory (typically named `casper`) which causes `virt-install` 
+  to not be able to boot the iso. Ubuntu still provides a legacy 
+  iso image installer, however this also is intended to be deprecated.
+  This is still the best *local* install method for Ubuntu 20.04. The 
+  link for these legacy install iso's was listed in the *focal* release 
+  notes as being [here](http://cdimage.ubuntu.com/ubuntu-legacy-server/releases/20.04/release/).
+
+- Working with the standard live iso images may require extracting the 
+  image to the local filesystem to allow passing the kernel boot options 
+  to `virt-install` which would look like the following:
+  ```
+  --boot kernel=casper/vmlinuz,initrd=casper/initrd,kernel_args="console=ttyS0"
+  ```
+  Note, that mounting the iso as Read-only won't work as the installer 
+  wants the initrd image to be writeable.
 
 
 ### Local-only VMs
 
 While this document covers running KVM nodes in a distributed fashion, 
 VMs can be created as local-only instances by using KVM's default NAT 
-interface (`--network "bridge=virbr0"`). This will create vms 
-reachable only from the local host.
+interface *virbr0* or `--network "bridge=virbr0"` provided to *kvmsh*. 
 
 
 ## Building Virtual Machines
 
-  Building the environment is accomplished by providing the JSON manifest 
+Building the environment is accomplished by providing the JSON manifest 
 to the `kvm-mgr.sh` script.
 ```
 $ ./bin/kvm-mgr.sh build manifest.json
 ```
-This defaults to using a source VM to clone called 'centos7', but the
+This defaults to using a source VM to clone called 'ubuntu20.04', but the
 script will take the source vm as a parameter (--srcvm) if desired.
 
-Note that if the centos7 VM is not currently defined, the script can be
+Note that if the Ubuntu VM is not currently defined, the script can be
 told to define it first (--xml).
 
 The build process will clone the VM's and set VM attributes according to the
@@ -256,10 +283,10 @@ Once built, the VMs can be started by via the 'start' action:
  $ ./bin/kvm-mgr.sh start manifest.json
 ```
 
-NOTE: The new VM's will all have the same 'centos7' hostname as a result of the
-clone process (or whatever hostname was set on the base image). The script
-provides the 'sethostname' action to iterate through all VM's in a manifest
-and set the hostname accordingly.
+NOTE: The new VM's will all have the same 'ubuntu2004' hostname as a result 
+of the clone process (or whatever hostname was used on the base image). The 
+script provides the 'sethostname' action to iterate through all VM's in a 
+manifest and set the hostname(s) accordingly.
 ```
  $ ./bin/kvm-mgr.sh sethostnames manifest.json
 ```
