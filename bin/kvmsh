@@ -13,17 +13,16 @@ VERSION="v21.04"
 
 # ------------------------------------
 # defaults
-ubuntu="ubuntu"
+ubuntu="ubuntu20.04"  # default os-var
+focal="ubuntu-20.04.1-legacy-server-amd64.iso"  # default image
+# alternate web installer
 #focal="http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/"
-focal="ubuntu-20.04.1-legacy-server-amd64.iso"
-centos="centos7.0"
-centos7="CentOS-7-x86_64-Minimal-2003.iso"
 
 pool="default"
 network="bridge=br0"  # bridge=virbr0 is the KVM default local NAT interface
 ostype="linux"
-osvar="$ubuntu"
-image="$focal"
+osvar=
+image=
 
 memory="1024,maxmemory=2048"
 vcpus="1"
@@ -82,10 +81,10 @@ Options:
   -N|--network  <if>      : KVM Network, default is '$network'.
   -m|--memory   <Mib>     : Memory allocation in Mb and optionally max memory.
                             eg. '--memory 1024' or '--memory $memory' 
-  -o|--os <ostype>        : Set virsh 'osvariant' for create. Default=$osvar 
+  -o|--os   <os-variant>  : Set virsh 'os-variant' for create. Default=$ubuntu 
   -p|--pool    <name>     : Storage pool to use, if not '$pool'.
   -u|--uri     <uri>      : Set the KVM connect uri. Default is '$virt_uri'.
-  -U|--no-uefi            : Disable UEFI VM support, which is enabled by default.
+  -U|--no-uefi            : Disable UEFI boot support, enabled by default.
   -V|--version            : Show version info and exit. 
 
    <action>               : VM operation to perform, see below. 
@@ -316,13 +315,6 @@ while [ $# -gt 0 ]; do
             ;;
         -o|--os|--osvar*)
             osvar="$2"
-            if [ -z "$image" ]; then
-                if [[ $osvar =~ ubuntu ]]; then
-                    image="$focal"
-                elif [[ $osvar =~ centos ]]; then
-                    image="$centos7"
-                fi
-            fi
             shift
             ;;
         -p|--pool)
@@ -425,6 +417,21 @@ create)
         exit 1
     fi
 
+    if [ -z "$image" ]; then
+        image="$focal"
+        osvar="$ubuntu"
+    elif [ -z "$osvar" ]; then
+        echo "$PNAME error: image provided but not os-variant, --osvar is required."
+        echo "  The tool 'osinfo-query os' will list os-variants."
+        exit 1
+    fi
+
+    if [[ $image =~ ^http ]]; then
+        srcimg="$image"
+    else
+        srcimg="$target/$image"
+    fi
+
     disk="$name-vda.img"
     diskimg="${target}/$disk"
 
@@ -436,24 +443,13 @@ create)
         exit $rt
     fi
 
-    if [[ $image =~ ^http ]]; then
-        srcimg="$image"
-    else
-        srcimg="$target/$image"
-    fi
-
-    if [ -z "$osvar" ]; then 
-        if [[ $srcimg =~ ubuntu ]]; then
-            osvar="$ubuntu"
-        elif [[ $srcimg =~ centos ]]; then
-            osvar="$centos"
-        fi
-    fi
-
     cmdargs=(--name "$name" \
-      --memory $memory --vcpus $vcpus \
-      --os-type "$ostype" --os-variant "$osvar" \
-      --disk "path=$diskimg" --network "$network")
+      --memory $memory \
+      --vcpus $vcpus \
+      --os-type "$ostype" \
+      --os-variant "$osvar" \
+      --disk "path=$diskimg" \
+      --network "$network")
 
     if [ $uefi -eq 0 ]; then
         cmdargs+=(--boot "uefi")
@@ -465,7 +461,12 @@ create)
     fi
 
     if [ $use_console -eq 0 ]; then
-        cmdargs+=(--graphics "none" --extra-args="$serial")
+        cmdargs+=(--graphics "none")
+        if [ $cdrom -eq 0 ]; then
+            echo "Warning, cannot set --extra-args with --cdrom"
+        else
+            cmdargs+=(--extra-args="$serial")
+        fi
     else
         if [ "${graphics,,}" == "vnc" ]; then
             cmdargs+=(--graphics "$vnc" --noautoconsole)
