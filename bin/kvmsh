@@ -28,6 +28,7 @@ memory="1024,maxmemory=2048"
 vcpus="1"
 graphics="vnc"
 use_console=1
+format="raw"  # or qcow2
 bootsz="40G"
 disksz="100G"
 mindisksz=5
@@ -35,7 +36,6 @@ disknum=0
 dryrun=1
 cdrom=1
 uefi=0
-format="raw"  # or qcow2
 
 virt_uri="qemu:///system"
 virsh="virsh --connect $virt_uri"

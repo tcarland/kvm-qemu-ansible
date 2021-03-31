@@ -13,7 +13,7 @@ KVM Operation guide for managing VMs across a KVM Cluster.
 - [Requirements](#requirements)
 - [Storage Pools](#storage-pools)
 - [Creating A Base VM Image](#creating-a-base-vm-image)
-  - [Ubuntu Vms](#ubuntu-vms)
+  - [Ubuntu Installs](#ubuntu-installs)
   - [Local-Only VMs](#local-only-vms)
 - [Building Virtual Machines](#building-virtual-machines)
 - [Starting VMs and Setting Hostnames](#starting-vms-and-setting-hostnames)
@@ -144,13 +144,13 @@ consistent across all nodes.
 
 ## Creating a Base VM Image
 
-  The managment script, `kvm-mgr.sh`, relies on a base VM image when building
-the VM's. This base images is used across all nodes to build the environment. By
-default, the scripts use an Ubuntu 20.04 image as the source when creating VMs from
-scratch, but other ISO's can be provided by the `--image` command option to `kvmsh`
-or by setting KVMSH_DEFAULT_IMAGE in the environment.
+The managment script, `kvm-mgr.sh`, relies on a base VM image when building
+the VM's. This base images is used across all nodes to build the environment. 
+By default, the scripts use an Ubuntu 20.04 image as the source when creating 
+VMs from scratch, but other ISO's can be provided by the `--image` command 
+option to `kvmsh` or by setting KVMSH_DEFAULT_IMAGE in the environment.
 
-  Since the resulting base VM will be cloned by all nodes when building VM, the
+Since the resulting base VM will be cloned by all nodes when building VM, the
 VM should be created on the NFS Storage pool (secondary) to make it immediately 
 available to all hosts.
 
@@ -158,9 +158,10 @@ available to all hosts.
 relative to the storage pool in use, so we ensure the ISO is also stored in the
 same storage pool.
 ```
-$ ssh sm-01 'ls -l /secondary'
-total 8175440
--rw-rw-r-- 1 tca tca  1215168512 Mar 29 07:27 ubuntu-20.04.2-live-server-amd64.iso
+$ ssh nfs01 'ls -l /kvm-secondary'
+total 10430984
+-rw-rw-r-- 1 libvirt-qemu kvm   855638016 Mar 29 19:36 ubuntu-20.04.1-legacy-server-amd64.iso
+-rw-rw-r-- 1 libvirt-qemu kvm  1215168512 Mar 29 07:27 ubuntu-20.04.2-live-server-amd64.iso
 ```
 
 The base VM can then be created on any node and pointed to the secondary pool.
@@ -181,7 +182,7 @@ total 8175440
 Another example using a larger boot disk (default is 40G)
 ```
 KVMSH_DEFAULT_IMAGE="CentOS-7-x86_64-Minimal-2003.iso"
-$ kvmsh --pool secondary --bootsize 80 --console create centos7-80
+$ kvmsh --pool secondary --bootsize 80 --console --os centos7 create centos7-80
 ```
 
 Once installed, we can add some additional requirements that are needed
@@ -197,27 +198,52 @@ this and some other items worth configuring into the base image:
 - Disable selinux if desired.
 - Disable NetworkManager if desired.
 
-Once complete, the final step would be to stop the VM and acquire the
+The final step would be to stop the VM and acquire the
 XML Definition for use across all remaining nodes to define our source VM.
 ```sh
 $ kvmsh stop ubuntu20.04
 $ kvmsh dumpxml ubuntu20.04 > ubuntu2004.xml
 
-# copy centos7.xml to all hosts
-[admin-01]$ scp sm-01:ubuntu2004.xml .
-[admin-01]$ clush -g lab --copy ubuntu2004.xml
+# copy xml to all hosts
+$ clush -g lab --copy ubuntu2004.xml
 
 # Now we define our base VM across all nodes
-[admin-01]$ clush -g lab 'kvmsh define ubuntu2004.xml'
+$ clush -g lab 'kvmsh define ubuntu2004.xml'
 ```
 
-### Ubuntu VMs
+### Ubuntu Installs
 
 Ubuntu installs using the console often require configuring *grub* 
 correctly for console access post-install.  Once the installer completes, 
 add `console=ttyS0` to */etc/default/grub* and run `update-grub` 
 accordingly. Ensure to enable the openSSH server during the install 
 process to ensure access to the vm.
+
+Ubuntu has a number of install options with varying degrees of 
+difficulty for installing with KVM and `virt-install`.
+
+- A Web-based install uses a *http* location as the `image` which means 
+  all assets are downloaded. For Ubuntu 20.04, for example, the web 
+  installer URL provided to `--image` would be set to 
+  `http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/`. 
+  This method is convienient but is likely to be deprecated in the near future.
+
+- Ubuntu live iso images place the iso boot kernel (vmlinuz) in a 
+  subdirectory (typically named `casper`) which causes `virt-install` 
+  to not be able to boot the iso. Ubuntu still provides a legacy 
+  iso image installer, however this also is intended to be deprecated.
+  This is still the best *local* install method for Ubuntu 20.04. The 
+  link for these legacy install iso's was listed in the *focal* release 
+  notes as being [here](http://cdimage.ubuntu.com/ubuntu-legacy-server/releases/20.04/release/).
+
+- Working with the standard live iso images may require extracting the 
+  image to the local filesystem to allow passing the kernel boot options 
+  to `virt-install` which would look like the following:
+  ```
+  --boot kernel=casper/vmlinuz,initrd=casper/initrd,kernel_args="console=ttyS0"
+  ```
+  Note, that mounting the iso as Read-only won't work as the installer 
+  wants the initrd image to be writeable.
 
 
 ### Local-only VMs
@@ -229,7 +255,7 @@ interface *virbr0* or `--network "bridge=virbr0"` provided to *kvmsh*.
 
 ## Building Virtual Machines
 
-  Building the environment is accomplished by providing the JSON manifest 
+Building the environment is accomplished by providing the JSON manifest 
 to the `kvm-mgr.sh` script.
 ```
 $ ./bin/kvm-mgr.sh build manifest.json
