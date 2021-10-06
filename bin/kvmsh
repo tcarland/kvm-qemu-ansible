@@ -2,14 +2,14 @@
 #
 #  kvmsh
 #
-#   Command-line tool for manipulating virtual machines wrapping the use
-#   of kvm tools 'virsh', 'virt-install', and 'virt-clone'.
+#  Command-line tool for manipulating virtual machines wrapping the use
+#  of kvm tools 'virsh', 'virt-install', and 'virt-clone'.
 #
 #  Timothy C. Arland <tcarland@gmail.com, tarland@trace3.com>
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v21.04"
+VERSION="v21.05"
 
 # ------------------------------------
 # defaults
@@ -56,7 +56,7 @@ usage="
 A command-line tool for manipulating KVM based virtual machines 
 wrapping the use of kvm tools 'virsh', 'virt-install', and 'virt-clone'.
 
-This is ntended for automation and scripting of kvm management with 
+This is intended for automation and scripting of kvm management with 
 some sane defaults for simplifying usage.
 
 The parameters all mirror 'virsh' closely and most virsh options are 
