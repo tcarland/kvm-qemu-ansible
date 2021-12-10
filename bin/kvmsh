@@ -137,7 +137,7 @@ list_all_pools()
 vm_is_running()
 {
     local vm="$1"
-    state=$( $virsh list | grep $vm | awk '{ print $3 }' )
+    state=$($virsh list | grep $vm | awk '{ print $3 }')
     if [ "$state" == "running" ]; then
         return 0
     elif [ -z "$state" ]; then
@@ -152,7 +152,7 @@ pool_is_active()
     local vm="$1"
     local rt=1
 
-    state=$( $virsh pool-list --all | grep $vm | awk '{ print $2 }' )
+    state=$($virsh pool-list --all | grep $vm | awk '{ print $2 }')
 
     if [ "$state" == "active" ]; then
         rt=0
@@ -182,8 +182,8 @@ get_macaddr()
 {
     local target="$1"
 
-    xml=$( $virsh dumpxml $target 2>/dev/null )
-    mac=$( echo "$xml" | xmllint --xpath 'string(//interface/mac/@address)' - 2>/dev/null )
+    xml=$($virsh dumpxml $target 2>/dev/null)
+    mac=$(echo "$xml" | xmllint --xpath 'string(//interface/mac/@address)' - 2>/dev/null)
 
     echo "$mac"
 
@@ -197,7 +197,7 @@ get_pools()
     local pooldir=""
     local rt=0
 
-    names=$( $virsh pool-list --all --name 2>/dev/null )
+    names=$($virsh pool-list --all --name 2>/dev/null)
 
     for p in $names; do
         if [ -n "$p" ]; then
@@ -210,10 +210,10 @@ get_pools()
     fi
 
     for p in ${!pary[@]}; do
-        pooldir=$( $virsh pool-dumpxml $p 2>/dev/null | \
+        pooldir=$($virsh pool-dumpxml $p 2>/dev/null | \
           grep -A5 target | \
           grep path | \
-          sed -E 's/.*<path>(.*)<\/path>/\1/' )
+          sed -E 's/.*<path>(.*)<\/path>/\1/')
         if [ -d $pooldir ]; then
             pary[$p]="$pooldir"
         fi
@@ -227,11 +227,11 @@ get_num_drives()
 {
     local vmname="$1"
 
-    devs=$( $virsh dumpxml $vmname | \
+    devs=$($virsh dumpxml $vmname | \
       grep -A5 "<disk type='file' device='disk'>" | \
       grep "<target dev=" | \
       sed -E "s/^.*<target dev='(.*)' bus.*/\1/" | \
-      sed -E 's/vd(.)/\1/' )
+      sed -E 's/vd(.)/\1/')
 
     return ${#devs}
 }
@@ -442,13 +442,13 @@ create)
         exit $rt
     fi
 
-    cmdargs=(--name "$name" \
-      --memory $memory \
-      --vcpus $vcpus \
-      --os-type "$ostype" \
-      --os-variant "$osvar" \
-      --disk "path=$diskimg" \
-      --network "$network")
+    cmdargs=(--name "$name" 
+             --memory $memory 
+             --vcpus $vcpus 
+             --os-type "$ostype" 
+             --os-variant "$osvar" 
+             --disk "path=$diskimg" 
+             --network "$network")
 
     if [ $uefi -eq 0 ]; then
         cmdargs+=(--boot "uefi")

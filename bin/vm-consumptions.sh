@@ -12,14 +12,14 @@ hostonly="$2"
 totalsf=".kvm-res_totals"
 scan=0
 
-C_GRN='\e[32m\e[1m'
-C_YEL='\e[93m'
-C_CYN='\e[96m'
-C_NC='\e[0m'
+grn='\e[32m\e[1m'
+yel='\e[93m'
+cyn='\e[96m'
+nc='\e[0m'
 
 
 if [ -z "$manifest" ]; then
-    echo "$PNAME Error: No json manifest provided!"
+    echo "$PNAME Error: No json manifest provided!" >&2
     exit 1
 fi
 
@@ -49,7 +49,7 @@ for x in $hosts; do
         fi
     fi
     hostq="\"$x\""
-    vmspec=$( jq ".[] | select(.host == $hostq)" $manifest )
+    vmspec=$(jq ".[] | select(.host == $hostq)" $manifest)
 
     cpu=$(echo $vmspec | jq '.vmspecs | map(.vcpus) | add')
     mem=$(echo $vmspec | jq '.vmspecs | map(.memoryGb) | add')
@@ -58,15 +58,14 @@ for x in $hosts; do
     totalmem=$(cat $totalsf | grep $x | awk -F, '{ print $3 }')
 
     availcpu=$(($totalcpu - $cpu))
-    availmem=$( echo - | awk "{ print $totalmem - $mem }" )
+    availmem=$(echo - | awk "{ print $totalmem - $mem }")
 
-    printf "\n${C_CYN}%s ${C_NC}: \n" $x
-    printf "  cpus total: ${C_CYN} $totalcpu ${C_NC} memory total: ${C_CYN} $totalmem ${C_NC} \n"
-    printf "  cpus used:  ${C_YEL} $cpu ${C_NC}  memory used: ${C_YEL} $mem ${C_NC} \n"
+    printf "\n${cyn}%s ${nc}: \n" $x
+    printf "  cpus total: ${cyn} $totalcpu ${nc} memory total: ${cyn} $totalmem ${nc} \n"
+    printf "  cpus used:  ${yel} $cpu ${nc}  memory used: ${yel} $mem ${nc} \n"
     printf " ------------------------------------------------ \n"
-    printf "  cpus avail: ${C_GRN} $availcpu ${C_NC} memory avail: ${C_GRN} $availmem ${C_NC} \n"
+    printf "  cpus avail: ${grn} $availcpu ${nc} memory avail: ${grn} $availmem ${nc} \n"
 
 done
-
 
 exit 0
