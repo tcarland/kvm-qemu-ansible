@@ -1,28 +1,9 @@
 #!/usr/bin/env bash
 #
-#  Create KVM infrastructure from 'kvmsh' JSON manifest.
-#
-#  [
-#    {
-#      "host" : "ta-dil01",
-#      "vmspecs" : [
-#        {
-#          "name" : "kvmhost01",
-#          "description" : "webserver"
-#          "hostname" : "kvmhost01.chnet.internal",
-#          "ipaddress" : "10.10.5.11",
-#          "vcpus" : 2,
-#          "memoryGb" : 4,
-#          "maxMemoryGb" : 8,
-#          "numDisks": 0,
-#          "diskSize" : 0
-#        }
-#      ]
-#    }
-#  ]
+#  Creates KVM infrastructure from a JSON manifest.
 #
 PNAME=${0##*\/}
-VERSION="v21.05"
+VERSION="v21.12"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -45,7 +26,7 @@ action=
 
 version="$PNAME $VERSION"
 usage="
-Create and manage KVM infrastructure from JSON Manifests.
+Create and Manage KVM infrastructure from JSON Manifests.
 
 Synopsis:
   $PNAME [options] <action> <manifest.json> 
@@ -63,7 +44,7 @@ Options:
   -V|--version       : Show version info and exit.
 
    <action>          : Action to perform: build|start|stop|delete 
-   <manifest.json    : Name of JSON manifest file.
+   <manifest.json>   : Name of the JSON manifest file.
 
 Actions: 
   config            : Create a new base config template.
@@ -79,6 +60,68 @@ Actions:
   setresources      : Will run setvcpus, setmem and setmaxmem for each 
                       VM in the manifest. VM's must be stopped. 
 "
+
+# ------------------------------------
+# The schema consists of an array of HostSpec objects that represent a KVM Node, 
+# and contains a list of VmSpec Objects defining the VM instances.
+schema='
+[
+    {
+        "host" : "host01",
+        "vmspecs" : [
+            {
+                "name" : "kvm01",
+                "description" : "template"
+                "hostname" : "kvmh01.cluster.internal",
+                "ipaddress" : "10.10.20.11",
+                "vcpus" : 1,
+                "memoryGb" : 1,
+                "maxMemoryGb" : 1,
+                "numDisks": 0,
+                "diskSize" : 0
+            },
+            {
+                "name" : "kvm02",
+                "description" : "template"
+                "hostname" : "kvmh02.cluster.internal",
+                "ipaddress" : "10.10.20.12",
+                "vcpus" : 1,
+                "memoryGb" : 1,
+                "maxMemoryGb" : 1,
+                "numDisks": 0,
+                "diskSize" : 0
+            }
+        ]
+    },
+    {
+        "host" : "host02",
+        "vmspecs" : [
+            {
+                "name" : "kvm03",
+                "description" : "template"
+                "hostname" : "kvmh03.cluster.internal",
+                "ipaddress" : "10.10.20.13",
+                "vcpus" : 1,
+                "memoryGb" : 1,
+                "maxMemoryGb" : 1,
+                "numDisks": 0,
+                "diskSize" : 0
+            },
+            {
+                "name" : "kvm04",
+                "description" : "template"
+                "hostname" : "kvmh04.cluster.internal",
+                "ipaddress" : "10.10.20.14",
+                "vcpus" : 1,
+                "memoryGb" : 1,
+                "maxMemoryGb" : 1,
+                "numDisks": 0,
+                "diskSize" : 0
+            }
+        ]
+    }
+]
+'
 
 # ------------------------------------
 
@@ -264,7 +307,7 @@ build|create|clone)
         for (( v=0; v < $num_vms; v++ )); do
             name=$( jq -r ".[$i].vmspecs | .[$v].name" $manifest )
             hostname=$( jq -r ".[$i].vmspecs | .[$v].hostname" $manifest )
-            ip=$( jq -r ".[$i].vmspecs | .[$v].ipaddress" $manifest )
+            ipaddr=$( jq -r ".[$i].vmspecs | .[$v].ipaddress" $manifest )
             vcpus=$( jq -r ".[$i].vmspecs | .[$v].vcpus" $manifest )
             mem=$( jq -r ".[$i].vmspecs | .[$v].memoryGb" $manifest )
             maxmem=$( jq -r ".[$i].vmspecs | .[$v].maxMemoryGb" $manifest )
@@ -294,9 +337,9 @@ build|create|clone)
                         exit 1
                     fi
 
-                    ( ssh $host "kvmsh setmaxmem ${maxmem}G $name" )
-                    ( ssh $host "kvmsh setmem ${mem}G $name" )
-                    ( ssh $host "kvmsh setvcpus $vcpus $name" )
+                    ( ssh $host "kvmsh setmaxmem ${maxmem}G ${name}" )
+                    ( ssh $host "kvmsh setmem ${mem}G ${name}" )
+                    ( ssh $host "kvmsh setvcpus ${vcpus} ${name}" )
 
                     # Attach Disks
                     if [ $ndisks -gt 0 ]; then
@@ -316,14 +359,14 @@ build|create|clone)
                 fi
 
                 # remove old entry from active leases and lease config
-                ( sudo sed -i'' /$ip/d ${leasecfg}.new )
-                ( sudo sed -i'' /$ip/d ${leasefile}.new )
+                ( sudo sed -i'' /$ipaddr/d ${leasecfg}.new )
+                ( sudo sed -i'' /$ipaddr/d ${leasefile}.new )
                 # apply new lease
-                ( sudo bash -c "printf 'dhcp-host=%s,%s \n' ${mac} ${ip} >> ${leasecfg}.new" )
+                ( sudo bash -c "printf 'dhcp-host=%s,%s \n' ${mac} ${ipaddr} >> ${leasecfg}.new" )
 
                 # replace hosts entry
-                ( sudo sed -i'' /$ip/d $hostsfile )
-                ( sudo bash -c "printf '%s \t %s \t %s\n' $ip $hostname $name >> $hostsfile" )
+                ( sudo sed -i'' /$ipaddr/d $hostsfile )
+                ( sudo bash -c "printf '%s \t %s \t %s\n' $ipaddr $hostname $name >> $hostsfile" )
             fi
         done
     done
@@ -394,7 +437,7 @@ sethostname*)
     echo ""
 
     if [ $rt -ne 0 ]; then
-        echo "Error waiting for host, no response or request timed out"
+        echo "$PNAME Error waiting for host, no response or request timed out"
         exit 1
     fi
 
@@ -502,7 +545,7 @@ delete)
                         ( ssh $host "kvmsh vol-delete $vol" )
                         rt=$?
                         if [ $rt -ne 0 ]; then
-                            echo "Error in 'vol-delete', attempting manual cleanup.."
+                            echo "$PNAME Error in 'vol-delete', attempting manual cleanup.."
                             echo "( ssh $host 'rm $fname' )"
                             ( ssh $host "rm $fname" )
                         fi
@@ -560,7 +603,7 @@ setresource*)
             maxmem=$( jq -r ".[$i].vmspecs | .[$v].maxMemoryGb" $manifest )
 
             if vm_is_running $host $name; then
-                echo "Error, VM appears to be running, please stop first. Skipping host.."
+                echo "$PNAME Error, VM appears to be running, please stop first. Skipping host.."
                 continue
             fi
 
@@ -588,65 +631,8 @@ config)
         exit 2
     fi
 
-    cat >>$manifest <<EOF
-[
-    {
-        "host" : "host01",
-        "vmspecs" : [
-            {
-                "name" : "kvm01",
-                "description" : "template"
-                "hostname" : "kvmh01.cluster.internal",
-                "ipaddress" : "10.10.10.11",
-                "vcpus" : 1,
-                "memoryGb" : 1,
-                "maxMemoryGb" : 1,
-                "numDisks": 0,
-                "diskSize" : 0
-            },
-            {
-                "name" : "kvm02",
-                "description" : "template"
-                "hostname" : "kvmh02.cluster.internal",
-                "ipaddress" : "10.10.10.12",
-                "vcpus" : 1,
-                "memoryGb" : 1,
-                "maxMemoryGb" : 1,
-                "numDisks": 0,
-                "diskSize" : 0
-            }
-        ]
-    },
-    {
-        "host" : "host02",
-        "vmspecs" : [
-            {
-                "name" : "kvm03",
-                "description" : "template"
-                "hostname" : "kvmh03.cluster.internal",
-                "ipaddress" : "10.10.10.13",
-                "vcpus" : 1,
-                "memoryGb" : 1,
-                "maxMemoryGb" : 1,
-                "numDisks": 0,
-                "diskSize" : 0
-            },
-            {
-                "name" : "kvm04",
-                "description" : "template"
-                "hostname" : "kvmh04.cluster.internal",
-                "ipaddress" : "10.10.10.14",
-                "vcpus" : 1,
-                "memoryGb" : 1,
-                "maxMemoryGb" : 1,
-                "numDisks": 0,
-                "diskSize" : 0
-            }
-        ]
-    }
-]
-EOF
-echo "$PNAME created a new manifest configuration as '$manifest'"
+    echo "$schema" > $manifest
+    echo " -> created a new configuration template as '$manifest'"
 ;;
 
 
