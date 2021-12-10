@@ -51,7 +51,7 @@ manifest describing the VM configurations and utilizes *kvmsh* per node
 to implement various actions like create, start, stop, and delete.
 
 The inventory for KVM hosts is a JSON Manifest of the following schema:
-```
+```json
 [
     {
         "host" : "t01",
@@ -82,8 +82,7 @@ The requirements for running the tools are:
 - `clustershell` for running 'kvmsh' across nodes is not directly required
    but is very useful and recommended.
 
-- The 'kvmsh' utility to be distributed to all nodes and placed in the
-  system path.
+- The 'kvmsh' utility to be distributed to all nodes and placed in the system path.
   ```
   clush -g lab --copy kvmsh
   clush -g lab 'sudo cp kvmsh /usr/local/bin'
@@ -93,7 +92,7 @@ The requirements for running the tools are:
   run from. This is used to provide DNS configuration and Static IP assignments 
   for the cluster via DHCP.
 
-- The user running the kvm-mgr.sh script should have sudo rights with NOPASSWD set.
+- The user running the *kvm-mgr.sh* script should have sudo rights with NOPASSWD set.
   The script will automatically configure the DHCP static lease based on the
   provided manifest on build.
 
@@ -242,8 +241,8 @@ difficulty for installing with KVM and `virt-install`.
   ```
   --boot kernel=casper/vmlinuz,initrd=casper/initrd,kernel_args="console=ttyS0"
   ```
-  Note, that mounting the iso as Read-only won't work as the installer 
-  wants the initrd image to be writeable.
+  Note, that mounting the ISO as Read-only won't work as the installer 
+  wants the *initrd* image to be writeable.
 
 
 ### Local-only VMs
@@ -357,7 +356,7 @@ might persist in the storage pool without having the VM defined.
 ```
 
 Or in a more convenient fashion:
-```
+```bash
 vmname="tdh-d03"
 for x in $( kvmsh vol-list | grep $vmname | \
     awk '{ print $1 }' ); do kvmsh vol-delete $x; done
@@ -367,7 +366,7 @@ for x in $( kvmsh vol-list | grep $vmname | \
 
 - Create a JSON manifest containing the VMs in question.
   Verify the manifest is accurate since we are permanently deleting.
-  ```
+  ```json
   $ cat tdh-datanodes.json
   [
       {
@@ -375,7 +374,7 @@ for x in $( kvmsh vol-list | grep $vmname | \
           "vmspecs" : [
               {
                   "name" : "tdh-d03",
-                  "description" : "TDH Datanode"
+                  "description" : "TDH Datanode",
                   "hostname" : "tdh-d03.tdh.internal",
                   "ipaddress" : "172.30.10.193",
                   "vcpus" : 2,
@@ -420,7 +419,7 @@ for x in $( kvmsh vol-list | grep $vmname | \
 
 The `vm-consumption.sh` script will provide the resource consumptions per node.
 The input parameter is a JSON manifest file.
-```
+```sh
 $ ./bin/vm-consumptions.sh <manifest.json>
 ```
 
@@ -505,4 +504,4 @@ Steps to Migrate.
     kvmsh start vmname
     ```
 
-Lastly, update the VM Manifest accordingly.
+Lastly, update the manifest accordingly.

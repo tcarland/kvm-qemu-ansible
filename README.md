@@ -16,5 +16,3 @@ the Ansible Deployment Guide and the KVM Operational guides.
  - [02-kvm-ansible.md](docs/02-kvm-ansible.md)
 
  - [03-kvm-operations.md](docs/03-kvm-operations.md)
-
-The docs can be converted to PDF by running `make docs`.
