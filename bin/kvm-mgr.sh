@@ -1,28 +1,9 @@
 #!/usr/bin/env bash
 #
-#  Create KVM infrastructure from 'kvmsh' JSON manifest.
-#
-#  [
-#    {
-#      "host" : "ta-dil01",
-#      "vmspecs" : [
-#        {
-#          "name" : "kvmhost01",
-#          "description" : "webserver"
-#          "hostname" : "kvmhost01.chnet.internal",
-#          "ipaddress" : "10.10.5.11",
-#          "vcpus" : 2,
-#          "memoryGb" : 4,
-#          "maxMemoryGb" : 8,
-#          "numDisks": 0,
-#          "diskSize" : 0
-#        }
-#      ]
-#    }
-#  ]
+#  Creates KVM infrastructure from a JSON manifest.
 #
 PNAME=${0##*\/}
-VERSION="v21.05"
+VERSION="v21.12"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -45,7 +26,7 @@ action=
 
 version="$PNAME $VERSION"
 usage="
-Create and manage KVM infrastructure from JSON Manifests.
+Create and Manage KVM infrastructure from JSON Manifests.
 
 Synopsis:
   $PNAME [options] <action> <manifest.json> 
@@ -63,7 +44,7 @@ Options:
   -V|--version       : Show version info and exit.
 
    <action>          : Action to perform: build|start|stop|delete 
-   <manifest.json    : Name of JSON manifest file.
+   <manifest.json>   : Name of the JSON manifest file.
 
 Actions: 
   config            : Create a new base config template.
@@ -79,6 +60,68 @@ Actions:
   setresources      : Will run setvcpus, setmem and setmaxmem for each 
                       VM in the manifest. VM's must be stopped. 
 "
+
+# ------------------------------------
+# The schema consists of an array of HostSpec objects that represent a KVM Node, 
+# and contains a list of VmSpec Objects defining the VM instances.
+schema='
+[
+    {
+        "host" : "host01",
+        "vmspecs" : [
+            {
+                "name" : "kvm01",
+                "description" : "template"
+                "hostname" : "kvmh01.cluster.internal",
+                "ipaddress" : "10.10.20.11",
+                "vcpus" : 1,
+                "memoryGb" : 1,
+                "maxMemoryGb" : 1,
+                "numDisks": 0,
+                "diskSize" : 0
+            },
+            {
+                "name" : "kvm02",
+                "description" : "template"
+                "hostname" : "kvmh02.cluster.internal",
+                "ipaddress" : "10.10.20.12",
+                "vcpus" : 1,
+                "memoryGb" : 1,
+                "maxMemoryGb" : 1,
+                "numDisks": 0,
+                "diskSize" : 0
+            }
+        ]
+    },
+    {
+        "host" : "host02",
+        "vmspecs" : [
+            {
+                "name" : "kvm03",
+                "description" : "template"
+                "hostname" : "kvmh03.cluster.internal",
+                "ipaddress" : "10.10.20.13",
+                "vcpus" : 1,
+                "memoryGb" : 1,
+                "maxMemoryGb" : 1,
+                "numDisks": 0,
+                "diskSize" : 0
+            },
+            {
+                "name" : "kvm04",
+                "description" : "template"
+                "hostname" : "kvmh04.cluster.internal",
+                "ipaddress" : "10.10.20.14",
+                "vcpus" : 1,
+                "memoryGb" : 1,
+                "maxMemoryGb" : 1,
+                "numDisks": 0,
+                "diskSize" : 0
+            }
+        ]
+    }
+]
+'
 
 # ------------------------------------
 
@@ -115,7 +158,7 @@ vm_is_defined()
     local h="$1"
     local vm="$2"
 
-    exists=$( ssh $h "kvmsh list | grep $vm" )
+    exists=$(ssh $h "kvmsh list | grep $vm")
 
     if [ -n "$exists" ]; then
         return 0
@@ -129,7 +172,7 @@ vm_is_running()
     local h="$1"
     local vm="$2"
 
-    running=$( ssh $h "kvmsh list | grep $vm | awk '{ print $3 }'" )
+    running=$(ssh $h "kvmsh list | grep $vm | awk '{ print $3 }'")
 
     if [ "$running" == "running" ]; then
         return 0
@@ -144,12 +187,12 @@ wait_for_host()
     local rt=1
 
     if [ -z "$name" ]; then
-        echo "$PNAME Error in 'wait_for_host' no target provided."
+        echo "$PNAME Error in 'wait_for_host' no target provided." >&2
         return $rt
     fi
 
     for x in {1..5}; do
-        yf=$( ssh $name 'uname -n' 2>/dev/null )
+        yf=$(ssh $name 'uname -n' 2>/dev/null)
         if [[ $yf == $srcvm ]]; then
             printf "\n -> Host is Alive! \n"
             rt=0
@@ -222,22 +265,22 @@ if [ -z "$action" ]; then
     exit 1
 fi
 
-case "$action" in
 
-# --- BUILD Infrastructure
+case "$action" in
+# --- BUILD 
 build|create|clone)
     if [ -z "$manifest" ]; then
-        echo "KVM Spec JSON not provided."
+        echo "KVM Spec JSON not provided." >&2
         echo "$usage"
         exit 1
     fi
 
-    nhosts=$( jq 'length' $manifest 2>/dev/null )
+    nhosts=$(jq 'length' $manifest 2>/dev/null)
     rt=$?
 
     if [ $rt -ne 0 ]; then
-        echo "$PNAME Error reading JSON, aborting .."
-        err=$( jq 'length' $manifest )
+        echo "$PNAME Error reading JSON, aborting .." >&2
+        err=$(jq 'length' $manifest)
         echo "$PNAME: $err"
         exit 1
     fi
@@ -250,8 +293,8 @@ build|create|clone)
     fi
 
     for (( i=0; i<$nhosts; i++ )); do
-        host=$( jq -r ".[$i].host" $manifest )
-        num_vms=$( jq ".[$i].vmspecs | length" $manifest )
+        host=$(jq -r ".[$i].host" $manifest)
+        num_vms=$(jq ".[$i].vmspecs | length" $manifest)
 
         if [ -n "$srcxml" ]; then
             echo " -> Defining source VM.."
@@ -262,14 +305,14 @@ build|create|clone)
         fi
 
         for (( v=0; v < $num_vms; v++ )); do
-            name=$( jq -r ".[$i].vmspecs | .[$v].name" $manifest )
-            hostname=$( jq -r ".[$i].vmspecs | .[$v].hostname" $manifest )
-            ip=$( jq -r ".[$i].vmspecs | .[$v].ipaddress" $manifest )
-            vcpus=$( jq -r ".[$i].vmspecs | .[$v].vcpus" $manifest )
-            mem=$( jq -r ".[$i].vmspecs | .[$v].memoryGb" $manifest )
-            maxmem=$( jq -r ".[$i].vmspecs | .[$v].maxMemoryGb" $manifest )
-            ndisks=$( jq -r ".[$i].vmspecs | .[$v].numDisks" $manifest )
-            dsize=$( jq -r ".[$i].vmspecs | .[$v].diskSize" $manifest )
+            name=$(jq -r ".[$i].vmspecs | .[$v].name" $manifest)
+            hostname=$(jq -r ".[$i].vmspecs | .[$v].hostname" $manifest)
+            ipaddr=$(jq -r ".[$i].vmspecs | .[$v].ipaddress" $manifest)
+            vcpus=$(jq -r ".[$i].vmspecs | .[$v].vcpus" $manifest)
+            mem=$(jq -r ".[$i].vmspecs | .[$v].memoryGb" $manifest)
+            maxmem=$(jq -r ".[$i].vmspecs | .[$v].maxMemoryGb" $manifest)
+            ndisks=$(jq -r ".[$i].vmspecs | .[$v].numDisks" $manifest)
+            dsize=$(jq -r ".[$i].vmspecs | .[$v].diskSize" $manifest)
 
             if vm_is_defined $host $name; then
                 echo " -> VM '$name' already exists on host '$host', Skipping..."
@@ -294,9 +337,9 @@ build|create|clone)
                         exit 1
                     fi
 
-                    ( ssh $host "kvmsh setmaxmem ${maxmem}G $name" )
-                    ( ssh $host "kvmsh setmem ${mem}G $name" )
-                    ( ssh $host "kvmsh setvcpus $vcpus $name" )
+                    ( ssh $host "kvmsh setmaxmem ${maxmem}G ${name}" )
+                    ( ssh $host "kvmsh setmem ${mem}G ${name}" )
+                    ( ssh $host "kvmsh setvcpus ${vcpus} ${name}" )
 
                     # Attach Disks
                     if [ $ndisks -gt 0 ]; then
@@ -307,7 +350,7 @@ build|create|clone)
 
             echo " -> Configure dnsmasq lease. "
             if [ $dryrun -eq 0 ]; then
-                mac=$( ssh $host "kvmsh mac-addr $name 2>/dev/null" )
+                mac=$(ssh $host "kvmsh mac-addr $name 2>/dev/null")
 
                 if [ -z "$mac" ]; then
                     echo "$PNAME Error determining MAC Address for '$name'" >&2
@@ -316,14 +359,14 @@ build|create|clone)
                 fi
 
                 # remove old entry from active leases and lease config
-                ( sudo sed -i'' /$ip/d ${leasecfg}.new )
-                ( sudo sed -i'' /$ip/d ${leasefile}.new )
+                ( sudo sed -i'' /$ipaddr/d ${leasecfg}.new )
+                ( sudo sed -i'' /$ipaddr/d ${leasefile}.new )
                 # apply new lease
-                ( sudo bash -c "printf 'dhcp-host=%s,%s \n' ${mac} ${ip} >> ${leasecfg}.new" )
+                ( sudo bash -c "printf 'dhcp-host=%s,%s \n' ${mac} ${ipaddr} >> ${leasecfg}.new" )
 
                 # replace hosts entry
-                ( sudo sed -i'' /$ip/d $hostsfile )
-                ( sudo bash -c "printf '%s \t %s \t %s\n' $ip $hostname $name >> $hostsfile" )
+                ( sudo sed -i'' /$ipaddr/d $hostsfile )
+                ( sudo bash -c "printf '%s \t %s \t %s\n' $ipaddr $hostname $name >> $hostsfile" )
             fi
         done
     done
@@ -341,19 +384,19 @@ build|create|clone)
 # --- START
 start)
     if [ -z "$manifest" ]; then
-        echo "$PNAME Error: JSON manifest not provided."
+        echo "$PNAME Error: JSON manifest not provided." >&2
         echo "$usage"
         exit 1
     fi
 
-    nhosts=$( jq 'length' $manifest )
+    nhosts=$(jq 'length' $manifest)
 
     for (( i=0; i<$nhosts; i++ )); do
-        host=$( jq -r ".[$i].host" $manifest )
-        num_vms=$( jq ".[$i].vmspecs | length" $manifest )
+        host=$(jq -r ".[$i].host" $manifest)
+        num_vms=$(jq ".[$i].vmspecs | length" $manifest)
 
         for (( v=0; v < $num_vms; v++ )); do
-            name=$( jq -r ".[$i].vmspecs | .[$v].name" $manifest )
+            name=$(jq -r ".[$i].vmspecs | .[$v].name" $manifest)
 
             echo "( ssh $host 'kvmsh start $name' )"
             if [ $dryrun -eq 0 ]; then
@@ -369,18 +412,18 @@ sethostname*)
     echo " -> Setting hostnames for '$manifest'"
 
     # Get the last vm in the set
-    nhosts=$( jq 'length' $manifest )
+    nhosts=$(jq 'length' $manifest)
     (( nlast=$nhosts-1 ))
-    nvms=$( jq ".[$nlast].vmspecs | length" $manifest )
+    nvms=$(jq ".[$nlast].vmspecs | length" $manifest)
     (( nvms=$nvms-1 ))
-    host=$( jq -r ".[$nlast].host" $manifest )
-    lastvm=$( jq -r ".[$nlast].vmspecs | .[$nvms].name" $manifest )
+    host=$(jq -r ".[$nlast].host" $manifest)
+    lastvm=$(jq -r ".[$nlast].vmspecs | .[$nvms].name" $manifest)
 
     # Validate the vm has been started.
     ( ssh $host "kvmsh status $lastvm" )
     rt=$?
     if [ $rt -ne 0 ]; then
-        echo "$PNAME Error: Hosts appears off, run 'start' first?"
+        echo "$PNAME Error: Hosts appears off, run 'start' first?" >&2
         exit $rt
     fi
 
@@ -394,17 +437,17 @@ sethostname*)
     echo ""
 
     if [ $rt -ne 0 ]; then
-        echo "Error waiting for host, no response or request timed out"
+        echo "$PNAME Error waiting for host, no response or request timed out" >&2
         exit 1
     fi
 
     # set hostnames
     for (( i=0; i<$nhosts; i++ )); do
-        num_vms=$( jq ".[$i].vmspecs | length" $manifest )
+        num_vms=$(jq ".[$i].vmspecs | length" $manifest)
 
         for (( v=0; v < $num_vms; v++ )); do
-            name=$( jq -r ".[$i].vmspecs | .[$v].name" $manifest )
-            hostname=$( jq -r ".[$i].vmspecs | .[$v].hostname" $manifest )
+            name=$(jq -r ".[$i].vmspecs | .[$v].name" $manifest)
+            hostname=$(jq -r ".[$i].vmspecs | .[$v].hostname" $manifest)
 
             echo "( ssh $name 'sudo hostname $hostname' )"
             echo "( ssh $name \"sudo bash -c 'echo $hostname > /etc/hostname'\" )"
@@ -424,19 +467,19 @@ sethostname*)
 # --- STOP
 stop|destroy)
     if [ -z "$manifest" ]; then
-        echo "$PNAME Error: JSON manifest not provided."
+        echo "$PNAME Error: JSON manifest not provided." >&2
         echo "$usage"
         exit 1
     fi
 
-    nhosts=$( jq 'length' $manifest )
+    nhosts=$(jq 'length' $manifest)
 
     for (( i=0; i<$nhosts; i++ )); do
-        host=$( jq -r ".[$i].host" $manifest )
-        num_vms=$( jq ".[$i].vmspecs | length" $manifest )
+        host=$(jq -r ".[$i].host" $manifest)
+        num_vms=$(jq ".[$i].vmspecs | length" $manifest)
 
         for (( v=0; v < $num_vms; v++ )); do
-            name=$( jq -r ".[$i].vmspecs | .[$v].name" $manifest )
+            name=$(jq -r ".[$i].vmspecs | .[$v].name" $manifest)
 
             echo "( ssh $host 'kvmsh stop $name' )"
             if [ $dryrun -eq 0 ]; then
@@ -450,12 +493,12 @@ stop|destroy)
 # --- DELETE all VMS
 delete)
     if [ -z "$manifest" ]; then
-        echo "$PNAME Error: JSON manifest not provided."
+        echo "$PNAME Error: JSON manifest not provided." >&2
         echo "$usage"
         exit 1
     fi
 
-    nhosts=$( jq 'length' $manifest )
+    nhosts=$(jq 'length' $manifest)
 
     if [ $dryrun -eq 0 ] && [ $noprompt -eq 0 ]; then
         echo "WARNING! 'delete' action will remove all VM's!"
@@ -475,15 +518,15 @@ delete)
     fi
 
     for (( i=0; i<$nhosts; i++ )); do
-        host=$( jq -r ".[$i].host" $manifest )
-        num_vms=$( jq ".[$i].vmspecs | length" $manifest )
+        host=$(jq -r ".[$i].host" $manifest)
+        num_vms=$(jq ".[$i].vmspecs | length" $manifest)
 
         for (( v=0; v < $num_vms; v++ )); do
-            name=$( jq -r ".[$i].vmspecs | .[$v].name" $manifest )
+            name=$(jq -r ".[$i].vmspecs | .[$v].name" $manifest)
             volumes=()
 
-            xml=$( ssh $host "kvmsh dumpxml $name" )
-            volumes=$( echo $xml | xmllint --xpath '//disk/source/@file' - 2>/dev/null )
+            xml=$(ssh $host "kvmsh dumpxml $name")
+            volumes=$(echo $xml | xmllint --xpath '//disk/source/@file' - 2>/dev/null)
 
             # kvmsh delete will run stop first
             echo "( ssh $host 'kvmsh delete $name' )"
@@ -494,7 +537,7 @@ delete)
 
             if [ $delete -eq 1 ]; then
                 for vol in $volumes; do
-                    vol=$( echo $vol | awk -F= '{ print $2 }' | awk -F\" '{ print $2 }' )
+                    vol=$(echo $vol | awk -F= '{ print $2 }' | awk -F\" '{ print $2 }')
                     fname="$vol"
                     vol=${vol##*\/}
                     echo "( ssh $host 'kvmsh vol-delete $vol' )"
@@ -502,7 +545,7 @@ delete)
                         ( ssh $host "kvmsh vol-delete $vol" )
                         rt=$?
                         if [ $rt -ne 0 ]; then
-                            echo "Error in 'vol-delete', attempting manual cleanup.."
+                            echo "$PNAME Error in 'vol-delete', attempting manual cleanup.." >&2
                             echo "( ssh $host 'rm $fname' )"
                             ( ssh $host "rm $fname" )
                         fi
@@ -516,19 +559,19 @@ delete)
 # --- EXPORT
 dumpxml)
     if [ -z "$manifest" ]; then
-        echo "$PNAME Error: JSON manifest not provided."
+        echo "$PNAME Error: JSON manifest not provided." >&2
         echo "$usage"
         exit 1
     fi
 
-    nhosts=$( jq 'length' $manifest )
+    nhosts=$(jq 'length' $manifest)
 
     for (( i=0; i<$nhosts; i++ )); do
-        host=$( jq -r ".[$i].host" $manifest )
-        num_vms=$( jq ".[$i].vmspecs | length" $manifest )
+        host=$(jq -r ".[$i].host" $manifest)
+        num_vms=$(jq ".[$i].vmspecs | length" $manifest)
 
         for (( v=0; v < $num_vms; v++ )); do
-            name=$( jq -r ".[$i].vmspecs | .[$v].name" $manifest )
+            name=$(jq -r ".[$i].vmspecs | .[$v].name" $manifest)
 
             echo "( ssh $host 'kvmsh dumpxml $name > ${name}.xml' )"
             if [ $dryrun -eq 0 ]; then
@@ -542,25 +585,25 @@ dumpxml)
 # --- SETRESOURCES
 setresource*)
     if [ -z "$manifest" ]; then
-        echo "$PNAME Error: JSON manifest not provided."
+        echo "$PNAME Error: JSON manifest not provided." >&2
         echo "$usage"
         exit 1
     fi
 
-    nhosts=$( jq 'length' $manifest )
+    nhosts=$(jq 'length' $manifest)
 
     for (( i=0; i<$nhosts; i++ )); do
-        host=$( jq -r ".[$i].host" $manifest )
-        num_vms=$( jq ".[$i].vmspecs | length" $manifest )
+        host=$(jq -r ".[$i].host" $manifest)
+        num_vms=$(jq ".[$i].vmspecs | length" $manifest)
 
         for (( v=0; v < $num_vms; v++ )); do
-            name=$( jq -r ".[$i].vmspecs | .[$v].name" $manifest )
-            vcpus=$( jq -r ".[$i].vmspecs | .[$v].vcpus" $manifest )
-            mem=$( jq -r ".[$i].vmspecs | .[$v].memoryGb" $manifest )
-            maxmem=$( jq -r ".[$i].vmspecs | .[$v].maxMemoryGb" $manifest )
+            name=$(jq -r ".[$i].vmspecs | .[$v].name" $manifest)
+            vcpus=$(jq -r ".[$i].vmspecs | .[$v].vcpus" $manifest)
+            mem=$(jq -r ".[$i].vmspecs | .[$v].memoryGb" $manifest)
+            maxmem=$(jq -r ".[$i].vmspecs | .[$v].maxMemoryGb" $manifest)
 
             if vm_is_running $host $name; then
-                echo "Error, VM appears to be running, please stop first. Skipping host.."
+                echo " -> VM appears to be running, please stop first. Skipping '$name'.."
                 continue
             fi
 
@@ -578,80 +621,23 @@ setresource*)
 
 config)
     if [ -z "$manifest" ]; then
-        echo "$PNAME Error: JSON manifest not provided."
+        echo "$PNAME Error: JSON manifest not provided." >&2
         echo "$usage"
         exit 1
     fi
 
     if [ -e $manifest ]; then
-        echo "$PNAME Error: Cannot write config, manifest '$manifest' already exists."
+        echo "$PNAME Error: Cannot write config, manifest '$manifest' already exists." >&2
         exit 2
     fi
 
-    cat >>$manifest <<EOF
-[
-    {
-        "host" : "host01",
-        "vmspecs" : [
-            {
-                "name" : "kvm01",
-                "description" : "template"
-                "hostname" : "kvmh01.cluster.internal",
-                "ipaddress" : "10.10.10.11",
-                "vcpus" : 1,
-                "memoryGb" : 1,
-                "maxMemoryGb" : 1,
-                "numDisks": 0,
-                "diskSize" : 0
-            },
-            {
-                "name" : "kvm02",
-                "description" : "template"
-                "hostname" : "kvmh02.cluster.internal",
-                "ipaddress" : "10.10.10.12",
-                "vcpus" : 1,
-                "memoryGb" : 1,
-                "maxMemoryGb" : 1,
-                "numDisks": 0,
-                "diskSize" : 0
-            }
-        ]
-    },
-    {
-        "host" : "host02",
-        "vmspecs" : [
-            {
-                "name" : "kvm03",
-                "description" : "template"
-                "hostname" : "kvmh03.cluster.internal",
-                "ipaddress" : "10.10.10.13",
-                "vcpus" : 1,
-                "memoryGb" : 1,
-                "maxMemoryGb" : 1,
-                "numDisks": 0,
-                "diskSize" : 0
-            },
-            {
-                "name" : "kvm04",
-                "description" : "template"
-                "hostname" : "kvmh04.cluster.internal",
-                "ipaddress" : "10.10.10.14",
-                "vcpus" : 1,
-                "memoryGb" : 1,
-                "maxMemoryGb" : 1,
-                "numDisks": 0,
-                "diskSize" : 0
-            }
-        ]
-    }
-]
-EOF
-echo "$PNAME created a new manifest configuration as '$manifest'"
+    echo "$schema" > $manifest
+    echo " -> Created a new configuration template as '$manifest'"
 ;;
 
 
 *)
-    echo "$PNAME Error: Action not recognized"
+    echo "$PNAME Error: Action '$action' not recognized" >&2
     rt=1
     ;;
 esac

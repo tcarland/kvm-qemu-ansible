@@ -20,8 +20,8 @@ lscpu | grep vmx
 
 Kernel options for *intel_iommu* should be enabled. The libvirt tool called 
 `virt-host-validate` can be used to verify platform settings and the iommu 
-setting. For ubuntu systems, edit */etc/default/grub* to add the string 
-*intel_iommu=on* to the GRUB_CMDLINE_LINUX_DEFAULT option and run 
+setting. For Ubuntu systems, edit */etc/default/grub* to add the string 
+*intel_iommu=on* to the **GRUB_CMDLINE_LINUX_DEFAULT** option and run 
 `sudo update-grub` to affect the change.
 
 ## Configuring Storage
@@ -31,12 +31,12 @@ The first is the *Primary* storage pool used to store VM's local to a given
 node. Ideally, we make use of local attached disks in a *RAID10* or *RAID5*
 configuration. Technically, any form of underlying storage can be used, but 
 using local storage is better for performance. The primary storage pool is 
-used as the *default* storage pool for creating VM's on a given node.
+used as the **default** storage pool for creating VM's on a given node.
 
-  Additionally, an optional *secondary* storage can be configured as a NFS
+  Additionally, an optional *secondary* storage pool can be configured as a NFS
 mount shared across all nodes that would be used to store source VMs, snapshots
 and/or clones. The pattern provided utilizes a *golden image* to act as the
-source vm, which is discussed in *operations* document.  
+source VM, which is discussed in *Operations* document.  
 
   The provided Ansible will configure the NFS Server and mounts accordingly,
 but relies on the system storage devices to already exist. The default
@@ -45,25 +45,26 @@ example uses a local data volume mount for all nodes  of */data01* making
 that the same path is used across all nodes, which is also deployed by Ansible.
 
   Again, these volumes should already exist and be mounted to the nodes prior
-to running Ansible.
+to running the Ansible playbook(s).
 
 
 ## Networking
 
-  Networking in the cluster uses bridged networking for exposing all
-configured VMs on the local host network.  The management server provides both
-DHCP static assignment of VM IPs and DNS, discussed in a later section.  As a
-result all nodes should use management server for DNS.  Configuring the bridge
-network **br0** for libvirt involves moving the hosts primary IP to the actual
-bridge interface, so care should be taken with the below configuration and it
-is highly recommended to ensure proper console access is available as mistakes
-will render the node unreachable.
+The cluster uses bridged networking for exposing VMs on the host network. The 
+management server provides both DHCP static assignment of VM IPs and DNS, 
+discussed in a later section.  As a result, all nodes should use the management 
+server(s) for DNS.  Configuring the bridge network **br0** for *libvirt* involves 
+moving the hosts primary IP Address to the bridge interface, so care should be 
+taken with the below network configurations. It is highly recommended to ensure 
+proper console access is available as mistakes will render the node unreachable.
 
-Disable the use of NetworkManager on our cluster nodes:
+Disable the use of NetworkManager on all cluster nodes:
 ```
 clush -a 'sudo systemctl stop NetworkManager'
 clush -a 'sudo systemctl disable NetworkManager'
 ```
+
+### Redhat-based distributions:
 
 Configure *ifcfg-br0* in `/etc/sysconfig/network-scripts/` for CentOS/RHEL:
 ```
@@ -86,8 +87,8 @@ DNS1=172.30.10.11
 DNS2=172.30.10.12
 ```
 
-Ethernet interface is configured to use the Bridge. In this case, the host is
-using a bonded Ethernet interface:
+The ethernet interface is configured to use the bridge. In this case, the host 
+is using a bonded Ethernet interface:
 ```
 $ cat ifcfg-bond0
 TYPE=Bond
@@ -100,28 +101,30 @@ ONBOOT=yes
 BRIDGE=br0
 ```
 
-Once Networking and Storage are configured, we can install KVM via Ansible
-described in the next readme.
+Once Networking and Storage are configured, the KVM stack can be deployed
+via Ansible as described in the next [document](02-kvm-ansible.md).
 
 
 ## Ansible requirements 
 
 Ansible should be the only package requirement needed for running the 
 playbooks, which in turn installs the required KVM related packages as 
-defined by *roles/kvm-qemu/vars/main.yml*. The playbooks currently target and 
-have been tested against RHEL/CentOS 7 and Ubuntu 20.04 Focal using 
-Ansible version 2.9. 
+defined by *roles/kvm-qemu/vars/main.yml*. The playbooks currently target, 
+and have been tested against, RHEL/CentOS 7 and Ubuntu 20.04 Focal using 
+Ansible version 2.9.6
 
 ## Management plane
 
 Preferred architecture involves having a pair of master nodes that 
 serve as the management plane for the cluster. A master node would be 
 used up front to bootstrap the cluster by running the necessary Ansible 
-playbooks, and as such, requires SSH key access to all nodes. 
+playbooks, and as such, requires SSH key access to all nodes. A pair of 
+master hosts would serve as Primary and Secondary DNS to the cluster, in 
+addition to any other services needed, eg. ntp, nfs, repositories, etc.
 
 ## KVM Role Account
 
-Best practice is to use a role-account as the user with access rights to 
+Best practice is to use a *role* account as the user with access rights to 
 manage KVM hosts. Just as in Ansible, the mgmt tool requires ssh hostkey 
-access to all nodes. There is no need to use the *root* accout for managing 
-virtual machines.
+access to all nodes. There is no need to use the *root* accout for creating 
+and managing the KVM nodes.
