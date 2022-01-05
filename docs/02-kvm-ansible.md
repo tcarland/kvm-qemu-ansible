@@ -61,6 +61,7 @@ system_ssh_ids:
 This file is stored encrypted via `ansible-vault encrypt $file` in the
 inventory path of **inventory/$env/group_vars/all/vault**.
 
+
 ### Inventory Host Groups
 
 The inventory for hosts falls into 4 groups, *mgmt_server*, *kvm_nodes*
@@ -79,6 +80,7 @@ dil[01:08]
 [mgmt_server]
 dim01
 ```
+
 
 ## Roles
 

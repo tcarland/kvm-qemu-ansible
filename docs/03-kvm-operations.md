@@ -28,10 +28,10 @@ KVM Operation guide for managing VMs across a KVM Cluster.
 
 ## Overview
 
-  Once the Ansible playbooks have successfully installed KVM, all 
-hosts should be configured with a KVM Hypervisor, a network bridge, 
-and optionally a NFS share for secondary storage. The playbooks do 
-not, however, configure storage pools or networking on the nodes. The 
+Once the Ansible playbooks have successfully installed KVM, all hosts 
+should be configured with a KVM Hypervisor, a network bridge, and 
+optionally a NFS share for secondary storage. The playbooks do not, 
+however, configure storage pools or networking on the nodes. The 
 networking should already be configured before continuing with these 
 steps to configure the storage pools.
 
@@ -96,17 +96,17 @@ The requirements for running the tools are:
   The script will automatically configure the DHCP static lease based on the
   provided manifest on build.
 
+
 ## Storage Pools
 
-  For a first time install, we must define our Storage Pools used to store
-VM and disk images. Ideally, two storage pools are utilized, a primary storage
-pool and a secondary pool. The primary storage pool is intended for local, 
-direct-attached storage for hosting VM images running on that given node. 
-The (optional) secondary storage would be a NFS Share for storing source images, 
-cloned VMs, or snapshots, etc.
+For a first time install, we must define our Storage Pools used to store VM and 
+disk images. Ideally, two storage pools are utilized, a primary storage pool and 
+a secondary pool. The primary storage pool is intended for local, direct-attached 
+storage for hosting VM images running on that given node.  The (optional) secondary 
+storage pool would be a NFS Share for storing source images, cloned VMs, snapshots, etc.
 
 - Creating the primary storage pool. Note the storage pool path should be made 
-consistent across all nodes.
+  consistent across all nodes.
   ```
   # default pool is our local, primary storage pool.
   # kvmsh will create, build, and start the pool
@@ -123,7 +123,7 @@ consistent across all nodes.
   ```
 
 - If the NFS Server role was deployed and, for example, the share is available as
-'/secondary', we would add the storage-pool same as above.
+  '/secondary', we would add the storage-pool same as above.
   ```
   clush -B -g lab 'kvmsh create-pool /secondary secondary'
   ```
@@ -153,7 +153,7 @@ Since the resulting base VM will be cloned by all nodes when building VM, the
 VM should be created on the NFS Storage pool (secondary) to make it immediately 
 available to all hosts.
 
-  When creating a new VM, the `kvmsh` script looks for the source ISO in a path
+When creating a new VM, the `kvmsh` script looks for the source ISO in a path
 relative to the storage pool in use, so we ensure the ISO is also stored in the
 same storage pool.
 ```
@@ -336,6 +336,7 @@ this is true for our 'kvmsh' wrapper as well. Running `delete` from
 *kvm-mgr.sh* using a manifest, however, will automatically remove all volumes
 unless the `--keep-disks` option is provided.
 
+
 ## Deleting Virtual Machines manually
 
  If the environment is wiped or vms deleted manually, the volumes
@@ -361,6 +362,7 @@ vmname="tdh-d03"
 for x in $( kvmsh vol-list | grep $vmname | \
     awk '{ print $1 }' ); do kvmsh vol-delete $x; done
 ```
+
 
 ## Deleting Virtual Machines by Manifest
 
@@ -415,6 +417,7 @@ for x in $( kvmsh vol-list | grep $vmname | \
   $ ./bin/kvm-mgr.sh --keep-disks delete tdh-datanodes.json
   ```
 
+
 ## Validate Host Resources
 
 The `vm-consumption.sh` script will provide the resource consumptions per node.
@@ -422,6 +425,7 @@ The input parameter is a JSON manifest file.
 ```sh
 $ ./bin/vm-consumptions.sh <manifest.json>
 ```
+
 
 ### Create a Consolidated Manifest
 
@@ -492,7 +496,7 @@ Steps to Migrate.
 4. Remove the VM specification from the original host
     ```
     kvmsh delete vmname.xml
-    ```
+    ```Status
 
 5. Remove volumes from original host
     ```
