@@ -3,7 +3,7 @@
 #  Creates KVM infrastructure from a JSON manifest.
 #
 PNAME=${0##*\/}
-VERSION="v21.12"
+VERSION="v22.01"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"

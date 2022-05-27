@@ -479,7 +479,7 @@ this document. The following describes how to migrate VM's offline.
   on all nodes, which makes moving VM's easier as little to no change to the
   VM Specification is needed.
 
-Steps to Migrate.
+Steps to Migrate:
 
 1. Save the VM Specification.
     ```
@@ -509,3 +509,15 @@ Steps to Migrate.
     ```
 
 Lastly, update the manifest accordingly.
+
+
+## Add disks to a Virtual Machine Offline
+
+- Stop the vm
+  ```
+  kvmsh stop <name>
+  ```
+- Attach disks
+  ```
+  kvmsh -D 2 -d 40G attach-disk <name>
+  ```
