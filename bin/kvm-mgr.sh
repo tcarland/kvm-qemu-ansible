@@ -3,7 +3,7 @@
 #  Creates KVM infrastructure from a JSON manifest.
 #
 PNAME=${0##*\/}
-VERSION="v22.01"
+VERSION="v22.02"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -314,7 +314,7 @@ build|create|clone)
             ndisks=$(jq -r ".[$i].vmspecs | .[$v].numDisks" $manifest)
             dsize=$(jq -r ".[$i].vmspecs | .[$v].diskSize" $manifest)
 
-            if vm_is_defined $host $name; then
+            if vm_is_defined "$host" "$name"; then
                 echo " -> VM '$name' already exists on host '$host', Skipping..."
             else
                 # Create VM
@@ -602,7 +602,7 @@ setresource*)
             mem=$(jq -r ".[$i].vmspecs | .[$v].memoryGb" $manifest)
             maxmem=$(jq -r ".[$i].vmspecs | .[$v].maxMemoryGb" $manifest)
 
-            if vm_is_running $host $name; then
+            if vm_is_running "$host" "$name"; then
                 echo " -> VM appears to be running, please stop first. Skipping '$name'.."
                 continue
             fi

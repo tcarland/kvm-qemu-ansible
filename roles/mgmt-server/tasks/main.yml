@@ -41,7 +41,7 @@
   copy:
     src: '{{ kvmmgr_bin }}'
     dest: '/usr/local/bin'
-    mode: 0750
+    mode: 0755
     owner: 'root'
     group: 'kvm'
     

@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v22.01"
+VERSION="v22.02"
 
 # ------------------------------------
 # defaults
@@ -140,12 +140,15 @@ list_all_pools()
 vm_is_running()
 {
     local vm="$1"
+
     state=$($virsh list | grep $vm | awk '{ print $3 }')
+
     if [ "$state" == "running" ]; then
         return 0
     elif [ -z "$state" ]; then
         return 2
     fi
+
     return 1
 }
 
@@ -367,7 +370,7 @@ attach*)
         exit 1
     fi
 
-    get_num_drives $name
+    get_num_drives "$name"
 
     rt=$?
     if [ $rt -gt 1 ]; then
@@ -375,7 +378,7 @@ attach*)
         exit 1
     fi
 
-    if vm_is_running $name; then
+    if vm_is_running "$name"; then
         live="--live"
     fi
 
@@ -383,7 +386,7 @@ attach*)
         dev="vd${chars[i++]}"
         img="$target/${name}-$dev.img"
 
-        create_disk $img $disksz $format
+        create_disk "$img" "$disksz" "$format"
 
         rt=$?
         if [ $rt -ne 0 ]; then
@@ -392,7 +395,7 @@ attach*)
         fi
 
         if [ $dryrun -ne 0 ]; then
-            ( $virsh attach-disk $name $img $dev --targetbus virtio $live )
+            ( $virsh attach-disk "$name" "$img" $dev --targetbus virtio $live )
 
             rt=$?
             if [ $rt -ne 0 ]; then
@@ -437,7 +440,7 @@ create)
     disk="$name-vda.img"
     diskimg="${target}/$disk"
 
-    create_disk $diskimg $bootsz $format
+    create_disk "$diskimg" "$bootsz" "$format"
 
     rt=$?
     if [ $rt -ne 0 ]; then
@@ -471,7 +474,7 @@ create)
         fi
     else
         if [ "${graphics,,}" == "vnc" ]; then
-            cmdargs+=(--graphics "$vnc" --noautoconsole)
+            cmdargs+=("--graphics" "$vnc" "--noautoconsole")
         fi
     fi
     
@@ -524,7 +527,7 @@ get-mac*|mac-addr*)
         exit 1
     fi
 
-    get_macaddr $name
+    get_macaddr "$name"
     rt=$?
     ;;
 
@@ -534,7 +537,7 @@ status)
         exit 2
     fi
 
-    vm_is_running $name
+    vm_is_running "$name"
     rt=$?
     ;;
 
@@ -586,7 +589,7 @@ setvcpu*)
     name="$args"
     live="--config"
 
-    if vm_is_running $name; then
+    if vm_is_running "$name"; then
         live="--live"
     fi
 
@@ -606,7 +609,7 @@ stop|shutdown|destroy)
         exit 1
     fi
 
-    if vm_is_running $name; then
+    if vm_is_running "$name"; then
         echo "$PNAME stopping '$name'.."
         if [ $dryrun -gt 0 ]; then
             ( $virsh destroy $name )
@@ -625,7 +628,7 @@ delete|undefine)
         exit 1
     fi
 
-    if vm_is_running $name; then
+    if vm_is_running "$name"; then
         echo " -> Stopping '$name'.."
         if [ $dryrun -gt 0 ]; then
             ( $virsh destroy $name )
@@ -716,7 +719,7 @@ pool-start|start-pool)
         pool="$name"
     fi
 
-    if pool_is_active $pool; then
+    if pool_is_active "$pool"; then
         echo " -> Storage pool '$pool' already started.."
         rt=0
     else
@@ -734,7 +737,7 @@ pool-stop|stop-pool)
         pool="$name"
     fi
 
-    if pool_is_active $pool; then
+    if pool_is_active "$pool"; then
         echo " -> Stopping storage pool '$pool'"
         if [ $dryrun -gt 0 ]; then
             ( $virsh pool-destroy $pool )
@@ -750,7 +753,7 @@ pool-delete|delete-pool)
         pool="$name"
     fi
 
-    if pool_is_active $pool; then
+    if pool_is_active "$pool"; then
         echo " -> Stopping storage pool '$pool'.."
         if [ $dryrun -gt 0 ]; then
             ( $virsh pool-destroy $pool )
@@ -777,7 +780,7 @@ pool-list|list-pool*)
     for pool in ${!poolmap[@]}; do
         state="inactive"
 
-        if pool_is_active $pool; then
+        if pool_is_active "$pool"; then
             state="active"
         fi
 
@@ -796,7 +799,7 @@ vol-list|list-vol*)
         pool="$name"
     fi
 
-    list_vols $pool
+    list_vols "$pool"
     ;;
 
 *)
