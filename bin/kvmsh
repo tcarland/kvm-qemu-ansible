@@ -9,7 +9,7 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v22.02"
+VERSION="v22.04"
 
 # ------------------------------------
 # defaults
@@ -515,6 +515,8 @@ clone)
     fi
 
     if [ $rt -eq 0 ]; then
+        ( sudo virt-sysprep --domain $target --operations dhcp-client-state,logfiles,machine-id )
+        ( sudo virt-sysprep --hostname $target --domain $target --enable customize )
         get_macaddr $target
     fi
     ;;
