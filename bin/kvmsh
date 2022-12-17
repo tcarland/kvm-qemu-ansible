@@ -9,18 +9,18 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v22.04"
+VERSION="v22.12"
 
 # ------------------------------------
 # defaults
-ubuntu="ubuntu20.04"  # default os-var
+ubuntu="ubuntu22.04"  # default os-var
+jammy="ubuntu-22.04.1-live-server-amd64.iso"  # default image
 focal="ubuntu-20.04.1-legacy-server-amd64.iso"  # default image
 #focal="http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/"
 
 pool="default"
-network="bridge=br0"  # bridge=virbr0 is the KVM default local NAT interface
-ostype="linux"
-osvar=
+network="bridge=virbr0"
+osvar=${ubuntu}
 image=
 
 memory="1024,maxmemory=2048"
@@ -32,7 +32,7 @@ bootsz="40G"
 disksz="100G"
 mindisksz=5
 disknum=0
-dryrun=1
+dryrun=0
 cdrom=1
 uefi=0
 
@@ -90,28 +90,28 @@ Options:
    <name>                 : Name of VM on which to operate the action. 
 
 Actions: 
-  create|delete  <name>  : Create or delete a VM (will not delete volumes).
-  define         <xml>   : Import or define a VM from the provided XML.
-  undefine       <name>  : Remove a VM resource from virsh.
-  start|stop     <name>  : Start or stop a VM. 
-  create-pool <dir> <n>  : Creates a storage pool named <n> for a given dir.
-  start-pool     <name>  : Activate an offline storage pool by name.
-  stop-pool      <name>  : Stop or deactivate a storage pool by name.
-  delete-pool    <name>  : Removes a pool definition (will not delete dir).
-  attach-disk    <name>  : Attach volumes to a vm (use -D and -d options).
-  delete-vol     <name>  : Delete a volume (will delete the disk image).
-  clone <srcvm> <destvm> : Clones vm (set --pool to move storage pools).
-  setmem    <xb> <name>  : Set a new memory value. Default unit is Kib.
-  setmaxmem <xb> <name>  : Set a max memory value. eg. 'setmaxmem 32G myvm'.
-  setvcpus   <n> <name>  : Set the number of vcpus for an existing VM.
-  status         <name>  : Provides status via shell return code.
-                           0=running, 1=stopped, 2=not found
-  dumpxml        <name>  : Runs virsh dumpxml for the vm name provided.
-  pool-list              : List available pools.
-  pool-autostart <pool>  : Set 'autostart' for pool.
-  vol-list  <pool>       : List volumes in pool.
-  list                   : List all virtual machines.
-  mac-addr  <name>       : Print HW MacAddress for the given VM.
+  create|delete   <name>  : Create or delete a VM (will not delete volumes).
+  define           <xml>  : Import or define a VM from the provided XML.
+  undefine|delete <name>  : Remove a VM resource from virsh. Same as 'delete'
+  start|stop      <name>  : Start or stop a VM. 
+  create-pool   <dir> <n> : Creates a storage pool named <n> for a given dir.
+  start-pool      <name>  : Activate an offline storage pool by name.
+  stop-pool       <name>  : Stop or deactivate a storage pool by name.
+  delete-pool     <name>  : Removes a pool definition (will not delete dir).
+  attach-disk     <name>  : Attach volumes to a vm (use -D and -d options).
+  delete-vol      <name>  : Delete a volume (will delete the disk image).
+  clone  <srcvm> <destvm> : Clones vm (set --pool to move storage pools).
+  setmem     <xb> <name>  : Set a new memory value. Default unit is Kib.
+  setmaxmem  <xb> <name>  : Set a max memory value. eg. 'setmaxmem 32G myvm'.
+  setvcpus    <n> <name>  : Set the number of vcpus for an existing VM.
+  status          <name>  : Provides status via shell return code.
+                            0=running, 1=stopped, 2=not found
+  dumpxml         <name>  : Runs virsh dumpxml for the vm name provided.
+  pool-list               : List available pools.
+  pool-autostart  <pool>  : Set 'autostart' for pool.
+  vol-list        <pool>  : List volumes in pool.
+  list                    : List all virtual machines.
+  mac-addr        <name>  : Print HW MacAddress for the given VM.
 "
 
 version="$PNAME $VERSION"
@@ -174,7 +174,7 @@ create_disk()
     local sz="$2"
     local type="$3"
 
-    if [ $dryrun -gt 0 ]; then
+    if [ $dryrun -eq 0 ]; then
         ( qemu-img create -f $type $img ${sz} )
     else
         echo "( qemu-img create -f $type $img ${sz} )"
@@ -258,6 +258,10 @@ while [ $# -gt 0 ]; do
             echo "$usage"
             exit 0
             ;;
+        -b|--bootsize|--boot-size)
+            bootsz="$2"
+            shift
+            ;;
         -c|--cpus)
             vcpus="$2"
             shift
@@ -297,9 +301,9 @@ while [ $# -gt 0 ]; do
             network="$2"
             shift
             ;;
-        -n|--dryrun)
+        -n|--dryrun|--dry-run)
             echo " <DRYRUN> enabled"
-            dryrun=0
+            dryrun=1
             ;;
         -b|--bootsize)
             bootsz="$2"
@@ -394,7 +398,7 @@ attach*)
             break
         fi
 
-        if [ $dryrun -ne 0 ]; then
+        if [ $dryrun -eq 0 ]; then
             ( $virsh attach-disk "$name" "$img" $dev --targetbus virtio $live )
 
             rt=$?
@@ -421,9 +425,10 @@ create)
         echo "$PNAME error no vm name defined." >&2
         exit 1
     fi
+    echo "name=$name"
 
     if [ -z "$image" ]; then
-        image="$focal"
+        image="$jammy"
         osvar="$ubuntu"
     elif [ -z "$osvar" ]; then
         echo "$PNAME error: image provided but not os-variant, --osvar is required."
@@ -437,7 +442,7 @@ create)
         srcimg="$target/$image"
     fi
 
-    disk="$name-vda.img"
+    disk="${name}-vda.img"
     diskimg="${target}/$disk"
 
     create_disk "$diskimg" "$bootsz" "$format"
@@ -451,7 +456,6 @@ create)
     cmdargs=(--name "$name" 
              --memory $memory 
              --vcpus $vcpus 
-             --os-type "$ostype" 
              --os-variant "$osvar" 
              --disk "path=$diskimg" 
              --network "$network")
@@ -468,7 +472,7 @@ create)
     if [ $use_console -eq 0 ]; then
         cmdargs+=(--graphics "none")
         if [ $cdrom -eq 0 ]; then
-            echo "Warning, cannot set --extra-args with --cdrom" >&2
+            echo "Warning, cannot set --extra-args (for serial console) with --cdrom enabled." >&2
         else
             cmdargs+=(--extra-args="$serial")
         fi
@@ -478,7 +482,7 @@ create)
         fi
     fi
     
-    if [ $dryrun -gt 0 ]; then
+    if [ $dryrun -eq 0 ]; then
         ( virt-install --connect $virt_uri ${cmdargs[@]} )
         rt=$?
     else
@@ -507,7 +511,7 @@ clone)
         exit 1
     fi
 
-    if [ $dryrun -gt 0 ]; then
+    if [ $dryrun -eq 0 ]; then
         ( virt-clone --connect $virt_uri --original $name --name $target --file $file )
         rt=$?
     else
@@ -545,7 +549,7 @@ status)
 
 # --- PASSTHROUGH OPERATIONS to virsh
 start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|define|dom*|checkpoint-*|net*|iface-*|nwfilter-*)
-    if [ $dryrun -gt 0 ]; then
+    if [ $dryrun -eq 0 ]; then
         ( $virsh $action $name $args )
         rt=$?
     else
@@ -572,7 +576,7 @@ setmem|setmaxmem)
         live="--live"
     fi
 
-    if [ $dryrun -gt 0 ]; then
+    if [ $dryrun -eq 0 ]; then
         ( $virsh $action $name $mem $live )
         rt=$?
     else
@@ -595,7 +599,7 @@ setvcpu*)
         live="--live"
     fi
 
-    if [ $dryrun -gt 0 ]; then
+    if [ $dryrun -eq 0 ]; then
         ( $virsh setvcpus $name $cnt --maximum $live )
         ( $virsh setvcpus $name $cnt $live )
         rt=$?
@@ -613,7 +617,7 @@ stop|shutdown|destroy)
 
     if vm_is_running "$name"; then
         echo "$PNAME stopping '$name'.."
-        if [ $dryrun -gt 0 ]; then
+        if [ $dryrun -eq 0 ]; then
             ( $virsh destroy $name )
             rt=$?
         fi
@@ -632,13 +636,13 @@ delete|undefine)
 
     if vm_is_running "$name"; then
         echo " -> Stopping '$name'.."
-        if [ $dryrun -gt 0 ]; then
+        if [ $dryrun -eq 0 ]; then
             ( $virsh destroy $name )
             rt=$?
         fi
     fi
 
-    if [ $dryrun -gt 0 ]; then
+    if [ $dryrun -eq 0 ]; then
         ( $virsh undefine --nvram $name )
         rt=$?
     fi
@@ -646,7 +650,7 @@ delete|undefine)
 
 # --- DELETE VOLUMES
 vol-delete|delete-vol)
-    if [ $dryrun -gt 0 ]; then
+    if [ $dryrun -eq 0 ]; then
         ( $virsh vol-delete $name --pool $pool )
         rt=$?
     else
@@ -667,7 +671,7 @@ pool-create|create-pool)
         pool="${args[0]}"
     fi
 
-    if [ $dryrun -gt 0 ]; then
+    if [ $dryrun -eq 0 ]; then
         ( $virsh pool-define-as $pool dir - - - - "$name" )
 
         rt=$?
@@ -708,7 +712,7 @@ pool-autostart)
         exit 1
     fi
 
-    if [ $dryrun -gt 0 ]; then
+    if [ $dryrun -eq 0 ]; then
         ( $virsh pool-autostart $name )
     else
         echo "( $virsh pool-autostart $name )"
@@ -726,7 +730,7 @@ pool-start|start-pool)
         rt=0
     else
         echo " -> Starting storage pool '$pool'.."
-        if [ $dryrun -gt 0 ]; then
+        if [ $dryrun -eq 0 ]; then
             ( $virsh pool-start $pool )
             rt=$?
         fi
@@ -741,7 +745,7 @@ pool-stop|stop-pool)
 
     if pool_is_active "$pool"; then
         echo " -> Stopping storage pool '$pool'"
-        if [ $dryrun -gt 0 ]; then
+        if [ $dryrun -eq 0 ]; then
             ( $virsh pool-destroy $pool )
             rt=$?
         fi
@@ -757,12 +761,12 @@ pool-delete|delete-pool)
 
     if pool_is_active "$pool"; then
         echo " -> Stopping storage pool '$pool'.."
-        if [ $dryrun -gt 0 ]; then
+        if [ $dryrun -eq 0 ]; then
             ( $virsh pool-destroy $pool )
         fi
     fi
 
-    if [ $dryrun -gt 0 ]; then
+    if [ $dryrun -eq 0 ]; then
         echo " -> Deleting storage pool '$pool'.."
         ( $virsh pool-undefine $pool )
         rt=$?
