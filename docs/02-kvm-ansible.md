@@ -1,10 +1,10 @@
 KVM Ansible Deployment Guide
 ============================
 
-  Ansible is used to bootstrap systems as well as optionally install the
+Ansible is used to bootstrap systems as well as optionally install the
 KVM stack and NFS Server/Clients.
 
-  Prior to running the Ansible Playbooks, the base storage systems to be used for
+Prior to running the Ansible Playbooks, the base storage systems to be used for
 the primary storage pool (and optional NFS Server) should already be created and
 mounted. Additionally a network bridge for *br0* should be configured as
 described in the [01-prerequisites.md](docs/01-prerequisites.md) document.
@@ -12,7 +12,7 @@ described in the [01-prerequisites.md](docs/01-prerequisites.md) document.
 
 ## Configure Inventory
 
-  The following inventory settings from *inventory/$env/group_vars/all/vars*
+The following inventory settings from *inventory/$env/group_vars/all/vars*
 should be customized to provide the domain settings, storage locations, and IP
 Address ranges. The following inventory example uses a common role-account called
 *tdh* for managing KVM and is added to the three primary groups needed.
