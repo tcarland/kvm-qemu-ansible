@@ -32,16 +32,16 @@ dhcp-option=option:router,{{ dhcp_router_ip }}
 # this is you want to boot machines over the network and you will need
 # a TFTP server; either dnsmasq's built in TFTP server or an
 # external one. (See below for how to enable the TFTP server.)
-#dhcp-boot=pxelinux.1
+dhcp-boot=pxelinux.0
 
 # The same as above, but use custom tftp-server instead machine running dnsmasq
 #dhcp-boot=pxelinux,server.name,192.168.1.100
 
 # Enable dnsmasq's built-in TFTP server
-#enable-tftp
+enable-tftp
 
 # Set the root directory for files available via FTP.
-#tftp-root=/var/ftpd
+tftp-root=/data01/ftpd
 
 # Do not abort if the tftp-root is unavailable
 tftp-no-fail

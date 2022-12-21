@@ -35,7 +35,7 @@ however, configure storage pools or networking on the nodes. The
 networking should already be configured before continuing with these 
 steps to configure the storage pools.
 
-  Additionally, there are two management scripts provided for managing
+Additionally, there are two management scripts provided for managing
 Virtual Machines across the infrastructure.
 
 - **kvmsh**:  This tool primarily wraps the usage of libvirt related 
