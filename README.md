@@ -1,8 +1,8 @@
 kvm-qemu-ansible
 =================
 
-Ansible playbooks and scripts for installing and managing a multi-node 
-KVM-QEMU environment on Linux systems. 
+Ansible playbooks and scripts for installing and managing a distributed, 
+multi-node KVM-QEMU environment on Linux systems. 
 
 The Ansible roles do not configure local storage or networking for KVM, 
 but do provide roles for utilizing NFS as a secondary storage pool. 

@@ -9,14 +9,13 @@
 #
 PNAME=${0##*\/}
 AUTHOR="tcarland@gmail.com"
-VERSION="v22.12"
+VERSION="v23.04"
 
 # ------------------------------------
 # defaults
 ubuntu="ubuntu22.04"  # default os-var
 jammy="ubuntu-22.04.1-live-server-amd64.iso"  # default image
-focal="ubuntu-20.04.1-legacy-server-amd64.iso"  # default image
-#focal="http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/"
+focal="ubuntu-20.04.1-legacy-server-amd64.iso"  
 
 pool="default"
 network="bridge=virbr0"
@@ -42,7 +41,7 @@ vnc="vnc,listen=0.0.0.0"
 serial="console=ttyS0,115200n8"
 mac=
 
-# map pool name to storage target
+# maps pool name to storage target
 declare -A poolmap
 
 if [ -n "$KVMSH_DEFAULT_IMAGE" ]; then 
@@ -111,6 +110,7 @@ Actions:
   pool-autostart  <pool>  : Set 'autostart' for pool.
   vol-list        <pool>  : List volumes in pool.
   list                    : List all virtual machines.
+  console         <name>  : Connect to the VM console.
   mac-addr        <name>  : Print HW MacAddress for the given VM.
 "
 

@@ -1,5 +1,4 @@
 ---
-
 sysctl:
   net:
     bridge:
