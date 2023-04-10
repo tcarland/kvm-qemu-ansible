@@ -2,7 +2,7 @@
 #
 # Determine guest vm resource totals per host for a given manifest.
 #
-# Timothy C. Arland <tcarland@gmail.com, tarland@trace3.com>
+# Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
 
@@ -17,6 +17,10 @@ yel='\e[93m'
 cyn='\e[96m'
 nc='\e[0m'
 
+if ! which jq >/dev/null 2>&1; then
+    echo "$PNAME Error: jq is not installed!" >&2
+    exit 1
+fi
 
 if [ -z "$manifest" ]; then
     echo "$PNAME Error: No json manifest provided!" >&2
@@ -65,7 +69,6 @@ for x in $hosts; do
     printf "  cpus used:  ${yel} $cpu ${nc}  memory used: ${yel} $mem ${nc} \n"
     printf " ------------------------------------------------ \n"
     printf "  cpus avail: ${grn} $availcpu ${nc} memory avail: ${grn} $availmem ${nc} \n"
-
 done
 
 exit 0

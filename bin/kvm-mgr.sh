@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-#  Creates KVM infrastructure from a JSON manifest.
+#  Creates and manages KVM infrastructure using a JSON manifest.
 #
 PNAME=${0##*\/}
 VERSION="v23.04"
@@ -26,7 +26,7 @@ action=
 
 version="$PNAME $VERSION"
 usage="
-Create and Manage KVM infrastructure from JSON Manifests.
+Creates and Manages KVM infrastructure from JSON Manifests.
 
 Synopsis:
   $PNAME [options] <action> <manifest.json> 
@@ -43,22 +43,22 @@ Options:
   -X|--noprompt      : Disables interactive prompt on delete.
   -V|--version       : Show version info and exit.
 
-   <action>          : Action to perform: build|start|stop|delete 
-   <manifest.json>   : Name of the JSON manifest file.
+  <action>           : Action to perform: build|start|stop|delete 
+  <manifest.json>    : Name of the JSON manifest file.
 
-Actions: 
-  config            : Create a new base config template.
-  build             : Build VMs defined by the manifest.
-                      Clones a source VM and configures DnsMasq
-  start             : Start all VMs in the manifest.
-  stop              : Stop all VMs in the manifest.
-  delete            : Delete all VMs defined by the manifest.
-  dumpxml           : Runs 'dumpxml' across the cluster locally.
-                      The XML is saved to \$HOME on the host node.
-  sethostname       : Configures VM hostnames, if not using the default 
-                      source VM ($srcvm), set '--srcvm' accordingly. 
-  setresources      : Will run setvcpus, setmem and setmaxmem for each 
-                      VM in the manifest. VM's must be stopped. 
+Actions:             (All actions require a manifest file)
+  config             : Create a new base config template.
+  build              : Build VMs defined by the manifest.
+                       Clones a source VM and configures DnsMasq
+  start              : Start all VMs in the manifest.
+  stop               : Stop all VMs in the manifest.
+  delete             : Delete all VMs defined by the manifest.
+  dumpxml            : Runs 'dumpxml' across the cluster locally.
+                       The XML is saved to \$HOME on the host node.
+  sethostname        : Configures VM hostnames, if not using the default 
+                       source VM ($srcvm), set '--srcvm' accordingly. 
+  setresources       : Will run setvcpus, setmem and setmaxmem for each 
+                       VM in the manifest. VM's must be stopped. 
 "
 
 # ------------------------------------

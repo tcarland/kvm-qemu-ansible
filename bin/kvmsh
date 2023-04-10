@@ -5,11 +5,11 @@
 #  Command-line tool for manipulating virtual machines wrapping the use
 #  of kvm-qemu tools: 'virsh', 'virt-install', and 'virt-clone'.
 #
-#  Timothy C. Arland <tcarland@gmail.com, tarland@trace3.com>
+#  Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
-AUTHOR="tcarland@gmail.com"
 VERSION="v23.04"
+AUTHOR="tcarland@gmail.com"
 
 # ------------------------------------
 # defaults
