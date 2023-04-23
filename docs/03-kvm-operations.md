@@ -319,6 +319,13 @@ current VMs, update the manifest as desired, and rebuild the VMS.
 Note that any adjustments to live instances that wish to be persisted should
 also be updated in the corresponding manifest.
 
+Resizing disks requires the VM to be stopped. Use the *qemu-img* tool to 
+resize the disk and then follow normal filesystem methods to grow or shrink 
+the filesystem. Alternatively, the *virt-resize* command can lvexpand and
+grow the filesystem in one command.
+```
+qemu-img resize -f raw <path/to/disk.img> [(+|-)size(k, M, G or T)]
+```
 
 ## Stop vs Destroy vs Delete
 
