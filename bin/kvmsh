@@ -491,6 +491,10 @@ create)
     fi
     ;;
 
+cli|shell)
+    virsh 
+    ;;
+
 # --- CLONE VM
 clone)
     path="${poolmap[$pool]}"
