@@ -541,6 +541,7 @@ get-mac*|mac-addr*)
 # --- STATUS
 status)
     if [ -z "$name" ]; then
+        echo "$PNAME error: no target provided." >&2:w
         exit 2
     fi
 
