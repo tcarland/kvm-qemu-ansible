@@ -8,7 +8,7 @@
 #  Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
-VERSION="v23.09"
+VERSION="v23.11"
 AUTHOR="tcarland@gmail.com"
 
 # ------------------------------------
@@ -87,6 +87,7 @@ Options:
 Actions: 
   create|delete   <name>  : Create or delete a VM (will not delete volumes).
   define           <xml>  : Import or define a VM from the provided XML.
+  edit            <name>  : Edit the live XML configuration for a VM.
   undefine|delete <name>  : Remove a VM resource from virsh. Same as 'delete'
   start|stop      <name>  : Start or stop a VM. 
   create-pool   <dir> <n> : Creates a storage pool named <n> for a given dir.
@@ -490,6 +491,10 @@ create)
     fi
     ;;
 
+cli|shell)
+    virsh 
+    ;;
+
 # --- CLONE VM
 clone)
     path="${poolmap[$pool]}"
@@ -536,6 +541,7 @@ get-mac*|mac-addr*)
 # --- STATUS
 status)
     if [ -z "$name" ]; then
+        echo "$PNAME error: no target provided." >&2:w
         exit 2
     fi
 
@@ -544,7 +550,7 @@ status)
     ;;
 
 # --- PASSTHROUGH OPERATIONS to virsh
-start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|define|dom*|checkpoint-*|net*|iface-*|nwfilter-*)
+start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|define|dom*|edit|checkpoint-*|net*|iface-*|nwfilter-*)
     if [ $dryrun -eq 0 ]; then
         ( $virsh $action $name $args )
         rt=$?
