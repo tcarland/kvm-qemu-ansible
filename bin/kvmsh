@@ -8,13 +8,13 @@
 #  Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
-VERSION="v23.11"
+VERSION="v23.12"
 AUTHOR="tcarland@gmail.com"
 
 # ------------------------------------
 # defaults
 ubuntu="ubuntu22.04"  # default os-var
-jammy="ubuntu-22.04.1-live-server-amd64.iso"  # default image
+jammy="ubuntu-22.04.3-live-server-amd64.iso"  # default image
 focal="ubuntu-20.04.1-legacy-server-amd64.iso"  
 
 pool="default"
