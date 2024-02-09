@@ -17,13 +17,13 @@ RPCNFSDARGS=""
 
 # Number of nfs server processes to be started.
 # The default is 8.
-#RPCNFSDCOUNT=16
+RPCNFSDCOUNT=16
 #
 # Set V4 grace period in seconds
-#NFSD_V4_GRACE=90
+NFSD_V4_GRACE=90
 #
 # Set V4 lease period in seconds
-#NFSD_V4_LEASE=90
+NFSD_V4_LEASE=90
 #
 # Optional arguments passed to rpc.mountd. See rpc.mountd(8)
 RPCMOUNTDOPTS=""

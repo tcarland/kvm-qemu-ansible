@@ -2,7 +2,7 @@
 - name: Install nfs-utils (RHEL)
   become: true
   yum:
-    name: 'nfs-utils'
+    name: '{{ nfs_utils_yum }}'
     state: present
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
@@ -33,7 +33,7 @@
 - name: Copy sysconfig/nfs
   become: true
   copy:
-    src: 'sysconfig-nfs'
+    src: 'nfs.sysconfig'
     dest: '/etc/sysconfig/nfs'
     mode: 0644
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'

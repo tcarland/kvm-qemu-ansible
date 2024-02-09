@@ -8,13 +8,14 @@
 #  Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
-VERSION="v23.12"
+VERSION="v24.02"
 AUTHOR="tcarland@gmail.com"
 
 # ------------------------------------
 # defaults
 ubuntu="ubuntu22.04"  # default os-var
 jammy="ubuntu-22.04.3-live-server-amd64.iso"  # default image
+jamdesk="ubuntu-22.04.3-desktop-amd64.iso"
 focal="ubuntu-20.04.1-legacy-server-amd64.iso"  
 
 pool="default"
@@ -88,7 +89,7 @@ Actions:
   create|delete   <name>  : Create or delete a VM (will not delete volumes).
   define           <xml>  : Import or define a VM from the provided XML.
   edit            <name>  : Edit the live XML configuration for a VM.
-  undefine|delete <name>  : Remove a VM resource from virsh. Same as 'delete'
+  und|lsefine|delete <name>  : Remove a VM resource from virsh. Same as 'delete'
   start|stop      <name>  : Start or stop a VM. 
   create-pool   <dir> <n> : Creates a storage pool named <n> for a given dir.
   start-pool      <name>  : Activate an offline storage pool by name.
@@ -797,7 +798,7 @@ pool-list|list-pool*)
     ;;
 
 # -- LIST VMS
-list-vm*|list)
+list-vm*|list|ls)
     list_vms
     ;;
 
