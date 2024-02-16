@@ -8,13 +8,14 @@
 #  Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
-VERSION="v23.12"
+VERSION="v24.02"
 AUTHOR="tcarland@gmail.com"
 
 # ------------------------------------
 # defaults
 ubuntu="ubuntu22.04"  # default os-var
 jammy="ubuntu-22.04.3-live-server-amd64.iso"  # default image
+jamdesk="ubuntu-22.04.3-desktop-amd64.iso"
 focal="ubuntu-20.04.1-legacy-server-amd64.iso"  
 
 pool="default"
@@ -797,7 +798,7 @@ pool-list|list-pool*)
     ;;
 
 # -- LIST VMS
-list-vm*|list)
+list-vm*|list|ls)
     list_vms
     ;;
 
