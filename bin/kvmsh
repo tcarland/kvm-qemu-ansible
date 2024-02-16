@@ -89,7 +89,7 @@ Actions:
   create|delete   <name>  : Create or delete a VM (will not delete volumes).
   define           <xml>  : Import or define a VM from the provided XML.
   edit            <name>  : Edit the live XML configuration for a VM.
-  und|lsefine|delete <name>  : Remove a VM resource from virsh. Same as 'delete'
+  undefine|delete <name>  : Remove a VM resource from virsh. Same as 'delete'
   start|stop      <name>  : Start or stop a VM. 
   create-pool   <dir> <n> : Creates a storage pool named <n> for a given dir.
   start-pool      <name>  : Activate an offline storage pool by name.
