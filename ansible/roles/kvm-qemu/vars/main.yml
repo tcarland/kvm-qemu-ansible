@@ -17,6 +17,7 @@ apt_kvm_packages:
  - ethtool
  - libguestfs-tools
  - libosinfo-bin
+ - libvirt-clients
  - libvirt-daemon-system
  - libvirt-daemon-driver-storage-zfs
  - libxml2

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 #
 # Determine guest vm resource totals per host for a given manifest.
-#
 # Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
