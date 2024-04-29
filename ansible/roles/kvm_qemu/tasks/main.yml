@@ -29,24 +29,24 @@
     mode: 0644
 
 - name: Enable listen_tcp in libvirt (RHEL)
-  become: true
   lineinfile:
     dest: '/etc/sysconfig/libvirtd'
     regexp: '^#LIBVIRTD_ARGS="--listen"'
     line: 'LIBVIRTD_ARGS="--listen"'
     state: present
-    backup: yes
+    backup: true
+  become: true
   notify: restart_libvirtd
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
 - name: Enable physical bridge br0 (RHEL)
-  become: true
   lineinfile:
     dest: '/etc/qemu-kvm/bridge.conf'
     insertafter: 'EOF'
     line: 'allow br0'
     regexp: '^allow br0'
     state: present
+  become: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
 - name: Configure sysctl
@@ -58,18 +58,18 @@
   notify: source_sysctl
 
 - name: Add Users to libvirt/kvm group
-  become: true
   user:
     name: '{{ item }}'
     groups: '{{ kvm_groups }}'
-    append: yes
+    append: true
+  become: true
   with_items: '{{ kvm_users }}'
 
 - name: Create KVM Primary Storage Pool directory
-  become: true
   file:
     path: '{{ kvm_primary_storage }}'
     owner: 'root'
     group: 'kvm'
     mode: 0775
     state: directory
+  become: true

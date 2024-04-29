@@ -1,10 +1,10 @@
 ---
 - name: restart_libvirtd
-  become: true
   service:
     name: 'libvirtd'
     state: 'restarted'
+  become: true
 
 - name: source_sysctl
-  become: true
   shell: "sysctl --system"
+  become: true

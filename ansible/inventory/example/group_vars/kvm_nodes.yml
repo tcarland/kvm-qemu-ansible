@@ -15,4 +15,3 @@ sysctl:
         disable_ipv6: "0"
   vm:
     swappiness: "1"
-    
