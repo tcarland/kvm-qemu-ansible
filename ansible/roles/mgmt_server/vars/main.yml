@@ -1,11 +1,11 @@
 ---
-yum_mgmt_packages:
+mgmt_server_yum:
   - jq
   - libxml2
   - clustershell
   - dnsmasq
 
-apt_mgmt_packages:
+mgmt_server_apt:
   - jq
   - libxml2
   - clustershell

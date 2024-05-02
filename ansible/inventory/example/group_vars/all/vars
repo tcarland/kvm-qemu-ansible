@@ -1,9 +1,9 @@
 ---
-kvm_users:
+kvm_qemu_users:
  - tca
  - tdh
 
-kvm_groups:
+kvm_qemu_groups:
  - libvirt
  - libvirt-qemu
  - kvm

@@ -3,17 +3,17 @@
   hosts: mgmt_server
   gather_facts: true
   roles:
-    - 'mgmt_server'
+    - mgmt_server
 
 - name: Install kvmsh to nodes
   hosts: kvm_nodes
   gather_facts: false
   tasks:
     - name: Install kvmsh..
-      copy:
-        src: '{{ kvmsh_bin }}'
-        dest: '/usr/local/bin'
-        mode: 0755
-        owner: 'root'
-        group: 'kvm'
+      ansible.builtin.copy:
+        src: "{{ kvmsh_bin }}"
+        dest: /usr/local/bin
+        mode: "0755"
+        owner: root
+        group: kvm
       become: true

@@ -1,29 +1,29 @@
 ---
-yum_kvm_packages:
- - bridge-utils
- - edk2-ovmf
- - ethtool
- - libguestfs-tools
- - libosinfo
- - libvirt
- - libxml2
- - qemu-kvm
- - qemu-kvm-tools
- - virt-install
- - virt-top
+kvm_qemu_yum:
+  - bridge-utils
+  - edk2-ovmf
+  - ethtool
+  - libguestfs-tools
+  - libosinfo
+  - libvirt
+  - libxml2
+  - qemu-kvm
+  - qemu-kvm-tools
+  - virt-install
+  - virt-top
 
-apt_kvm_packages:
- - bridge-utils
- - ethtool
- - libguestfs-tools
- - libosinfo-bin
- - libvirt-clients
- - libvirt-daemon-system
- - libvirt-daemon-driver-storage-zfs
- - libxml2
- - ovmf
- - qemu-kvm
- - qemu-utils
- - qemu-efi
- - virtinst
- - virt-top
+kvm_qemu_apt:
+  - bridge-utils
+  - ethtool
+  - libguestfs-tools
+  - libosinfo-bin
+  - libvirt-clients
+  - libvirt-daemon-system
+  - libvirt-daemon-driver-storage-zfs
+  - libxml2
+  - ovmf
+  - qemu-kvm
+  - qemu-utils
+  - qemu-efi
+  - virtinst
+  - virt-top

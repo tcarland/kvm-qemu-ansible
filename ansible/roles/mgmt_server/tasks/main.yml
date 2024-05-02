@@ -1,46 +1,45 @@
 ---
-- name: Install EPEL Release on RHEL-based systems
-  yum:
-    name: 'epel-release'
-    lock_timeout: 180
-    state: present
+- name: Install RHEL packages
   become: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Install Mgmt Prerequisites (yum)
-  yum:
-    name: '{{ yum_mgmt_packages }}'
-    lock_timeout: 180
-    state: present
-  become: true
-  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
-
+  block:
+    - name: Install EPEL Release on RHEL-based systems
+      ansible.builtin.yum:
+        name: epel-release
+        lock_timeout: 180
+        state: present
+    - name: Install Mgmt Prerequisites (yum)
+      ansible.builtin.yum:
+        name: "{{ mgmt_server_yum }}"
+        lock_timeout: 180
+        state: present
 - name: Install Mgmt Prerequisites (apt)
-  apt:
-    name: '{{ apt_mgmt_packages }}'
+  ansible.builtin.apt:
+    name: "{{ mgmt_server_apt }}"
     state: present
   become: true
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
 - name: Configure DnsMasq
-  template:
-    src: 'dnsmasq.conf.j2'
-    dest: '/etc/dnsmasq.conf'
-    mode: 0644
+  ansible.builtin.template:
+    src: dnsmasq.conf.j2
+    dest: /etc/dnsmasq.conf
+    mode: "0644"
   become: true
 
 - name: Enable and Start DnsMasq
-  service:
-    name: 'dnsmasq'
-    state: 'started'
-    enabled: 'yes'
+  ansible.builtin.service:
+    name: dnsmasq
+    state: started
+    enabled: "yes"
   become: true
 
 - name: Install kvm-mgr.sh
-  copy:
-    src: '{{ kvmmgr_bin }}'
-    dest: '/usr/local/bin'
-    mode: 0755
-    owner: 'root'
-    group: 'kvm'
+  ansible.builtin.copy:
+    src: "{{ kvmmgr_bin }}"
+    dest: /usr/local/bin
+    mode: "0755"
+    owner: root
+    group: kvm
   become: true
