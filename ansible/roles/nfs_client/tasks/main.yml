@@ -1,26 +1,26 @@
 ---
 - name: Enable rpcbind
-  service:
-    name: 'rpcbind'
-    state: 'started'
-    enabled: 'yes'
+  ansible.builtin.service:
+    name: rpcbind
+    state: started
+    enabled: "yes"
   become: true
 
 - name: Enable nfs
-  service:
-    name: 'nfs'
-    state: 'started'
-    enabled: 'yes'
+  ansible.builtin.service:
+    name: nfs
+    state: started
+    enabled: "yes"
   become: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
 - name: Mount NFS Share
-  mount:
+  ansible.posix.mount:
     fstype: nfs
     opts: defaults
-    dump: '0'
-    passno: '0'
+    dump: "0"
+    passno: "0"
     state: mounted
-    src: '{{ nfs_storage_server }}:{{ nfs_storage_export }}'
-    path: '{{ nfs_storage_mountpoint }}'
+    src: "{{ nfs_storage_server }}:{{ nfs_storage_export }}"
+    path: "{{ nfs_storage_mountpoint }}"
   become: true

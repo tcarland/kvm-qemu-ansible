@@ -1,7 +1,7 @@
 ---
-nfs_utils_apt:
-  - 'nfs-common'
-  - 'libnfs-utils'
+nfs_common_apt:
+  - nfs-common
+  - libnfs-utils
 
-nfs_utils_yum:
-  - 'nfs-utils'
+nfs_common_yum:
+  - nfs-utils

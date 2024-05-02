@@ -1,4 +1,6 @@
+---
 # .ansible-lint
 skip_list:
   - command-instead-of-shell
   - no-changed-when
+  - meta-no-info

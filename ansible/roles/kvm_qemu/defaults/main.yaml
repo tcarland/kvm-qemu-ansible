@@ -1,5 +1,5 @@
 ---
-kvm_groups:
- - libvirt
- - libvirt-qemu
- - kvm
+kvm_qemu_groups:
+  - libvirt
+  - libvirt-qemu
+  - kvm

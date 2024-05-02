@@ -1,34 +1,34 @@
 ---
 - name: Add path to exports
-  lineinfile:
-    path: '/etc/exports'
-    regexp: '^{{ nfs_storage_export }}'
-    line: '{{ nfs_storage_export }} *(rw,async,no_root_squash,no_subtree_check)'
+  ansible.builtin.lineinfile:
+    path: /etc/exports
+    regexp: ^{{ nfs_storage_export }}
+    line: "{{ nfs_storage_export }} *(rw,async,no_root_squash,no_subtree_check)"
   become: true
 
 - name: Create export path
-  file:
-    path: '{{ nfs_storage_export }}'
-    owner: 'root'
-    group: 'root'
-    mode: 0755
+  ansible.builtin.file:
+    path: "{{ nfs_storage_export }}"
+    owner: root
+    group: root
+    mode: "0755"
     state: directory
   become: true
 
 - name: Enable rpcbind
-  service:
-    name: 'rpcbind'
-    state: 'started'
-    enabled: 'yes'
+  ansible.builtin.service:
+    name: rpcbind
+    state: started
+    enabled: "yes"
   become: true
 
 - name: Enable nfs
-  service:
-    name: 'nfs'
-    state: 'started'
-    enabled: 'yes'
+  ansible.builtin.service:
+    name: nfs
+    state: started
+    enabled: "yes"
   become: true
 
 - name: Export Filesystems
-  shell: 'exportfs -a'
+  ansible.builtin.shell: exportfs -a
   become: true

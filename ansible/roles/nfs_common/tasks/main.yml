@@ -1,39 +1,39 @@
 ---
 - name: Install nfs-utils (RHEL)
-  yum:
-    name: '{{ nfs_utils_yum }}'
+  ansible.builtin.yum:
+    name: "{{ nfs_common_yum }}"
     state: present
   become: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
 - name: Install nfs-utils (Debian)
-  apt:
-    name: '{{ nfs_utils_apt }}'
+  ansible.builtin.apt:
+    name: "{{ nfs_common_apt }}"
     state: present
   become: true
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
 - name: Ensure /etc/exports exists
-  copy:
+  ansible.builtin.copy:
     content: ""
     dest: /etc/exports
     force: false
     group: root
     owner: root
-    mode: 0644
+    mode: "0644"
   become: true
 
 - name: Configure idmapd.conf
-  template:
-    src: 'idmapd.conf.j2'
-    dest: '/etc/idmapd.conf'
-    mode: 0644
+  ansible.builtin.template:
+    src: idmapd.conf.j2
+    dest: /etc/idmapd.conf
+    mode: "0644"
   become: true
 
 - name: Copy sysconfig/nfs
-  copy:
-    src: 'nfs.sysconfig'
-    dest: '/etc/sysconfig/nfs'
-    mode: 0644
+  ansible.builtin.copy:
+    src: nfs.sysconfig
+    dest: /etc/sysconfig/nfs
+    mode: "0644"
   become: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
