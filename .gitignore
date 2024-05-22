@@ -6,6 +6,7 @@
 *.tar*
 *.jar
 *.zip
+*.pdf
 .ansible
 inventory/*
 !inventory/example
