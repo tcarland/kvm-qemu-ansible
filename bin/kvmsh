@@ -8,22 +8,23 @@
 #  Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
-VERSION="v24.05"
+VERSION="v24.06"
 AUTHOR="tcarland@gmail.com"
 
 # ------------------------------------
 # defaults
 ubuntu="ubuntu22.04"  # default os-var
+
 jammy="ubuntu-22.04.4-live-server-amd64.iso"  # default image
-jamdesk="ubuntu-22.04.4-desktop-amd64.iso"
-focal="ubuntu-20.04.1-legacy-server-amd64.iso"
-numbats="ubuntu-24.04-live-server-amd64.iso"
-numbat="ubuntu-24.04-desktop-amd64.iso"
+jammy_desk="ubuntu-22.04.4-desktop-amd64.iso"
+
+noble="ubuntu-24.04-live-server-amd64.iso"
+noble_desk="ubuntu-24.04-desktop-amd64.iso"
 
 pool="default"
 network="bridge=virbr0"
 osvar=${ubuntu}
-image="${KVMSH_DEFAULT_IMAGE}"
+image="${KVMSH_DEFAULT_IMAGE:-$jammy}"
 
 memory="1024,maxmemory=2048"
 vcpus="1"
@@ -44,7 +45,7 @@ vnc="vnc,listen=0.0.0.0"
 serial="console=ttyS0,115200n8"
 mac=
 
-# maps pool name to storage target
+# map storage pool name to storage target
 declare -A poolmap
 
 # ------------------------------------
@@ -110,6 +111,7 @@ Actions:
   pool-autostart  <pool>  : Set 'autostart' for pool.
   vol-list        <pool>  : List volumes in pool.
   list                    : List all virtual machines.
+  os-list                 : List os-variants available to KVM.
   console         <name>  : Connect to the VM console.
   mac-addr        <name>  : Print HW MacAddress for the given VM.
 "
@@ -432,7 +434,7 @@ create)
         osvar="$ubuntu"
     elif [ -z "$osvar" ]; then
         echo "$PNAME error: image provided but not os-variant, --osvar is required."
-        echo "  The virsh tool 'osinfo-query os' will list os-variants."
+        echo "  use 'os-list' action to show os-variants."
         exit 1
     fi
 
@@ -463,6 +465,7 @@ create)
     if [ $uefi -eq 0 ]; then
         cmdargs+=(--boot "uefi")
     fi
+
     if [ $cdrom -eq 0 ]; then
         cmdargs+=(--cdrom "$srcimg")
     else
@@ -684,7 +687,7 @@ pool-create|create-pool)
             echo "$PNAME Error in pool-define" >&2
             exit $rt
         fi
-        echo " -> Pool '$pool' defined."
+        echo " -> Storage Pool '$pool' defined."
 
         ( $virsh pool-build $pool )
 
@@ -693,7 +696,7 @@ pool-create|create-pool)
             echo "$PNAME Error building pool"
             exit $rt
         fi
-        echo " -> Pool '$pool' built successfully."
+        echo " -> Storage Pool '$pool' built successfully."
 
         ( $virsh pool-start $pool )
 
@@ -702,7 +705,7 @@ pool-create|create-pool)
             echo "$PNAME Error starting pool" >&2
             exit $rt
         fi
-        echo " -> Pool '$pool' started successfully."
+        echo " -> Storage Pool '$pool' started successfully."
     else
         echo "( $virsh pool-define-as $pool dir - - - - '$name' )"
         echo "( $virsh pool-build $pool )"
@@ -802,6 +805,11 @@ pool-list|list-pool*)
 # -- LIST VMS
 list-vm*|list|ls)
     list_vms
+    ;;
+
+# -- OSINFO LIST
+os-list|os-info)
+    osinfo-query os
     ;;
 
 # --- LIST VOLUMES
