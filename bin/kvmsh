@@ -8,7 +8,7 @@
 #  Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
-VERSION="v24.06"
+VERSION="v24.08"
 AUTHOR="tcarland@gmail.com"
 
 # ------------------------------------
@@ -89,27 +89,30 @@ Options:
    <name>                 : Name of VM on which to operate the action. 
 
 Actions: 
+  clone  <srcvm> <destvm> : Clones vm (set --pool to move storage pools).
   create|delete   <name>  : Create or delete a VM (will not delete volumes).
   define           <xml>  : Import or define a VM from the provided XML.
   edit            <name>  : Edit the live XML configuration for a VM.
   undefine|delete <name>  : Remove a VM resource from virsh. Same as 'delete'
   start|stop      <name>  : Start or stop a VM. 
-  create-pool   <dir> <n> : Creates a storage pool named <n> for a given dir.
-  start-pool      <name>  : Activate an offline storage pool by name.
-  stop-pool       <name>  : Stop or deactivate a storage pool by name.
-  delete-pool     <name>  : Removes a pool definition (will not delete dir).
+   ---- Storage Pools ----
+  pool-create   <dir> <n> : Creates a storage pool named <n> for a given dir.
+  pool-start      <name>  : Activate an offline storage pool by name.
+  pool-stop       <name>  : Stop or deactivate a storage pool by name.
+  pool-delete     <name>  : Removes a pool definition (will not delete dir).
+  edit-pool       <name>  : Edit the pool xml configuration.
+  pool-list               : List available pools.
+  pool-autostart  <pool>  : Set 'autostart' for pool.
+    ---- Volumes ----
   attach-disk     <name>  : Attach volumes to a vm (use -D and -d options).
   delete-vol      <name>  : Delete a volume (will delete the disk image).
-  clone  <srcvm> <destvm> : Clones vm (set --pool to move storage pools).
+  list-vol        <pool>  : List volumes in pool.
   setmem     <xb> <name>  : Set a new memory value. Default unit is Kib.
   setmaxmem  <xb> <name>  : Set a max memory value. eg. 'setmaxmem 32G myvm'.
   setvcpus    <n> <name>  : Set the number of vcpus for an existing VM.
   status          <name>  : Provides status via shell return code.
                             0=running, 1=stopped, 2=not found
   dumpxml         <name>  : Runs virsh dumpxml for the vm name provided.
-  pool-list               : List available pools.
-  pool-autostart  <pool>  : Set 'autostart' for pool.
-  vol-list        <pool>  : List volumes in pool.
   list                    : List all virtual machines.
   os-list                 : List os-variants available to KVM.
   console         <name>  : Connect to the VM console.
@@ -666,6 +669,15 @@ vol-delete|delete-vol)
     fi
     ;;
 
+# --- LIST VOLUMES
+vol-list|list-vol*)
+    if [ -n "$name" ]; then
+        pool="$name"
+    fi
+
+    list_vols "$pool"
+    ;;
+
 # --- CREATE STORAGE POOL
 pool-create|create-pool)
     if [ -z "$name" ]; then
@@ -802,6 +814,11 @@ pool-list|list-pool*)
     done
     ;;
 
+# --- EDIT POOLS
+pool-edit|edit-pool)
+    $virsh pool-edit $name
+    ;;
+
 # -- LIST VMS
 list-vm*|list|ls)
     list_vms
@@ -810,15 +827,6 @@ list-vm*|list|ls)
 # -- OSINFO LIST
 os-list|os-info)
     osinfo-query os
-    ;;
-
-# --- LIST VOLUMES
-vol-list|list-vol*)
-    if [ -n "$name" ]; then
-        pool="$name"
-    fi
-
-    list_vols "$pool"
     ;;
 
 *)
