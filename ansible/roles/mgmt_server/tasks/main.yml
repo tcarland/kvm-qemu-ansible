@@ -5,12 +5,12 @@
 
   block:
     - name: Install EPEL Release on RHEL-based systems
-      ansible.builtin.yum:
+      ansible.builtin.dnf:
         name: epel-release
         lock_timeout: 180
         state: present
     - name: Install Mgmt Prerequisites (yum)
-      ansible.builtin.yum:
+      ansible.builtin.dnf:
         name: "{{ mgmt_server_yum }}"
         lock_timeout: 180
         state: present

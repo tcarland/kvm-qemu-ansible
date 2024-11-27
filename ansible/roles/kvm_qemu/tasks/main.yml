@@ -1,7 +1,7 @@
 ---
 - name: Install KVM Packages (RHEL)
   become: true
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     name: "{{ kvm_qemu_yum }}"
     lock_timeout: 180
     state: present
