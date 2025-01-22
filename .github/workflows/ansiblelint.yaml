@@ -17,4 +17,5 @@ jobs:
       - name: Ansible Lint
         uses: ansible/ansible-lint@main
         with:
+          required-collections: ansible.posix
           args: -c ansible/.ansible-lint --force-color ansible
