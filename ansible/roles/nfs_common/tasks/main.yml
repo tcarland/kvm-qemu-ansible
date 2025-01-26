@@ -1,6 +1,6 @@
 ---
 - name: Install nfs-utils (RHEL)
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     name: "{{ nfs_common_yum }}"
     state: present
   become: true

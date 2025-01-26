@@ -145,7 +145,7 @@ storage pool would be a NFS Share for storing source images, cloned VMs, snapsho
 
 The managment script, `kvm-mgr.sh`, relies on a base VM image when building
 the VM's. This base images is used across all nodes to build the environment. 
-By default, the scripts use an Ubuntu 20.04 image as the source when creating 
+By default, the scripts use an Ubuntu 24.04 image as the source when creating 
 VMs from scratch, but other ISO's can be provided by the `--image` command 
 option to `kvmsh` or by setting KVMSH_DEFAULT_IMAGE in the environment.
 
@@ -159,13 +159,12 @@ same storage pool.
 ```
 $ ssh nfs01 'ls -l /kvm-secondary'
 total 10430984
--rw-rw-r-- 1 libvirt-qemu kvm   855638016 Mar 29 19:36 ubuntu-20.04.1-legacy-server-amd64.iso
--rw-rw-r-- 1 libvirt-qemu kvm  1215168512 Mar 29 07:27 ubuntu-20.04.2-live-server-amd64.iso
+-rw-rw-r-- 1 libvirt-qemu kvm  1215168512 Mar 29 07:27 ubuntu-24.04.1-live-server-amd64.iso
 ```
 
 The base VM can then be created on any node and pointed to the secondary pool.
 ```
-$ kvmsh --pool secondary --console create ubuntu20.04
+$ kvmsh --pool secondary --console create ubuntu24.04
 ```
 
 This will attach to the console of the new VM to provide access to the
@@ -174,8 +173,8 @@ at boot with DHCP. Once complete, the VM will exist in our secondary pool:
 ```
 [idps@sm-01]$ ls -l /secondary
 total 8175440
--rw-rw-r-- 1 tca tca  1215168512 Mar 29 07:27 ubuntu-20.04.2-live-server-amd64.iso
--rw-r--r-- 1 tca tca 26843545600 Mar 28 06:26 ubuntu20.04-vda.img
+-rw-rw-r-- 1 tca tca  1215168512 Mar 29 07:27 ubuntu-24.04.1-live-server-amd64.iso
+-rw-r--r-- 1 tca tca 26843545600 Mar 28 06:26 ubuntu24.04-vda.img
 ```
 
 Another example using a larger boot disk (default is 40G)
@@ -200,14 +199,14 @@ this and some other items worth configuring into the base image:
 The final step would be to stop the VM and acquire the
 XML Definition for use across all remaining nodes to define our source VM.
 ```sh
-$ kvmsh stop ubuntu20.04
-$ kvmsh dumpxml ubuntu20.04 > ubuntu2004.xml
+$ kvmsh stop ubuntu24.04
+$ kvmsh dumpxml ubuntu24.04 > ubuntu2404.xml
 
 # copy xml to all hosts
-$ clush -g lab --copy ubuntu2004.xml
+$ clush -g lab --copy ubuntu2404.xml
 
 # Now we define our base VM across all nodes
-$ clush -g lab 'kvmsh define ubuntu2004.xml'
+$ clush -g lab 'kvmsh define ubuntu2404.xml'
 ```
 
 ### Ubuntu Installs
@@ -227,12 +226,12 @@ difficulty for installing with KVM and `virt-install`.
   `http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/`. 
   This method is convienient but is likely to be deprecated in the near future.
 
-- Ubuntu live iso images place the iso boot kernel (vmlinuz) in a 
+- Ubuntu live ISO images place the ISO boot kernel (vmlinuz) in a 
   subdirectory (typically named `casper`) which causes `virt-install` 
-  to not be able to boot the iso. Ubuntu still provides a legacy 
-  iso image installer, however this also is intended to be deprecated.
-  This is still the best *local* install method for Ubuntu 20.04. The 
-  link for these legacy install iso's was listed in the *focal* release 
+  to not be able to boot the ISO. Ubuntu still provides a legacy 
+  ISO image installer, however this also is intended to be deprecated.
+  This is still the best *local* install method for Ubuntu 22.04. The 
+  link for these legacy install ISO's was listed in the *focal* release 
   notes as being [here](http://cdimage.ubuntu.com/ubuntu-legacy-server/releases/20.04/release/).
 
 - Working with the standard live iso images may require extracting the 
@@ -243,6 +242,10 @@ difficulty for installing with KVM and `virt-install`.
   ```
   Note, that mounting the ISO as Read-only won't work as the installer 
   wants the *initrd* image to be writeable.
+
+- On successful install of the OS, the *linux-kvm-tools* package should 
+  be installed. Also note that *openssh-server* is typically not installed 
+  by default.
 
 
 ### Local-only VMs
