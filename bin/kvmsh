@@ -8,7 +8,7 @@
 #  Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
-VERSION="v25.01"
+VERSION="v25.03"
 AUTHOR="tcarland@gmail.com"
 
 # ------------------------------------
@@ -107,9 +107,9 @@ Actions:
   attach-disk     <name>  : Attach volumes to a vm (use -D and -d options).
   delete-vol      <name>  : Delete a volume (will delete the disk image).
   list-vol        <pool>  : List volumes in pool.
-  setmem     <xb> <name>  : Set a new memory value. Default unit is Kib.
-  setmaxmem  <xb> <name>  : Set a max memory value. eg. 'setmaxmem 32G myvm'.
-  setvcpus    <n> <name>  : Set the number of vcpus for an existing VM.
+  setmem     <name> <xb>  : Set a new memory value. Default unit is Kib.
+  setmaxmem  <name> <xb>  : Set a max memory value. eg. 'setmaxmem 32G myvm'.
+  setvcpus   <name> <n>   : Set the number of vcpus for an existing VM.
   status          <name>  : Provides status via shell return code.
                             0=running, 1=stopped, 2=not found
   dumpxml         <name>  : Runs virsh dumpxml for the vm name provided.
@@ -117,6 +117,9 @@ Actions:
   os-list                 : List os-variants available to KVM.
   console         <name>  : Connect to the VM console.
   mac-addr        <name>  : Print HW MacAddress for the given VM.
+    ---- Snapshots ----
+  snapshot-*      <n> <s> : create|delete|revert|info  <name> <snapshot>
+  snapshot-list   <name>  : List the snapshosts for a vm.
 "
 
 version="$PNAME $VERSION"
@@ -280,7 +283,7 @@ while [ $# -gt 0 ]; do
             if [[ "$format" == "qcow2" || "$format" == "raw" ]]; then
                 echo "$PNAME set disk typed as '$format'"
             else
-                echo "$PNAME error, invalid format type '$format'"
+                echo "$PNAME error, invalid format type '$format'" >&2
                 exit 1
             fi
             ;;
@@ -375,7 +378,7 @@ attach*)
         exit 1
     fi
     if [ -z "$name" ]; then
-        echo "$PNAME error, no VM defined."
+        echo "$PNAME error, no VM defined." >&2
         exit 1
     fi
 
@@ -384,7 +387,7 @@ attach*)
     rt=$?
     if [ $rt -gt 1 ]; then
         echo "$PNAME only supports attaching volumes to VM's with a single drive" >&2
-        exit 1
+        exit 2
     fi
 
     if vm_is_running "$name"; then
@@ -436,8 +439,8 @@ create)
         image="$noble"
         osvar="$ubuntu"
     elif [ -z "$osvar" ]; then
-        echo "$PNAME error: image provided but not os-variant, --osvar is required."
-        echo "  use 'os-list' action to show os-variants."
+        echo "$PNAME error: image provided but not os-variant, --osvar is required." >&2
+        echo "  use 'os-list' action to show os-variants." >&2
         exit 1
     fi
 
@@ -558,31 +561,20 @@ status)
     rt=$?
     ;;
 
-# --- PASSTHROUGH OPERATIONS to virsh
-start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|define|dom*|edit|checkpoint-*|net*|iface-*|nwfilter-*)
-    if [ $dryrun -eq 0 ]; then
-        ( $virsh $action $name $args )
-        rt=$?
-    else
-        echo "( $virsh $action $name $args )"
-    fi
-    ;;
-
 # --- SET MEMORY
 setmem|setmaxmem)
     if [ -z "$name" ] || [ -z "$args" ]; then
         echo "$PNAME error in arguments" >&2
         exit 1
     fi
-    # flip args
-    mem="$name"
-    name="$args"
+    
+    mem="$args"
     live="--config"
 
     if vm_is_running $name; then
         if [[ $action =~ ^setmaxmem.*$ ]]; then
-            echo "$PNAME Error, VM must off or suspended to change Max Memory" >&2
-            exit 1
+            echo "$PNAME Error, VM must be off or suspended to change Max Memory" >&2
+            exit 2
         fi
         live="--live"
     fi
@@ -602,8 +594,7 @@ setvcpu*)
         exit 1
     fi
     # flip args
-    cnt="$name"
-    name="$args"
+    cnt="$args"
     live="--config"
 
     if vm_is_running "$name"; then
@@ -705,7 +696,7 @@ pool-create|create-pool)
 
         rt=$?
         if [ $rt -gt 0 ]; then
-            echo "$PNAME Error building pool"
+            echo "$PNAME Error building pool" >&2
             exit $rt
         fi
         echo " -> Storage Pool '$pool' built successfully."
@@ -718,6 +709,8 @@ pool-create|create-pool)
             exit $rt
         fi
         echo " -> Storage Pool '$pool' started successfully."
+        echo " -> NOTE: Ensure '$name' is added to '/etc/apparmor.d/local/abstractions/libvirt-qemu'"
+        echo " sudo sh -c 'echo \"${name}/** rwk,\" >> /etc/apparmor.d/local/abstractions/libvirt-qemu'"
     else
         echo "( $virsh pool-define-as $pool dir - - - - '$name' )"
         echo "( $virsh pool-build $pool )"
@@ -767,8 +760,10 @@ pool-stop|stop-pool)
         echo " -> Stopping storage pool '$pool'"
         if [ $dryrun -eq 0 ]; then
             ( $virsh pool-destroy $pool )
-            rt=$?
+        else
+            echo "( $virsh pool-destroy $pool )"
         fi
+        rt=$?
     fi
     ;;
 
@@ -783,14 +778,18 @@ pool-delete|delete-pool)
         echo " -> Stopping storage pool '$pool'.."
         if [ $dryrun -eq 0 ]; then
             ( $virsh pool-destroy $pool )
+        else 
+            echo "( $virsh pool-destroy $pool )"
         fi
     fi
 
+    echo " -> Deleting storage pool '$pool'.."
     if [ $dryrun -eq 0 ]; then
-        echo " -> Deleting storage pool '$pool'.."
         ( $virsh pool-undefine $pool )
-        rt=$?
+    else
+        echo "( $virsh pool-undefine $pool )"
     fi
+    rt=$?
     ;;
 
 # -- LIST POOLS
@@ -829,9 +828,114 @@ os-list|os-info)
     osinfo-query os
     ;;
 
+# -- SNAPSHOT CREATE
+snapshot|snapshot-create*)
+    snap="${args[0]}"
+
+    if [ -z "$snap" ]; then
+        echo "$PNAME Error, snapshot name required." >&2
+        exit 1
+    fi
+
+    if vm_is_running $name; then
+        echo "$PNAME does not support snapshots while vm is running" >&2
+        echo "Stop the vm first or use 'virsh' directly with --running" >&2
+        exit 2
+    fi
+    
+    cmdargs=(--disk-only --atomic)
+    blks=$(virsh domblklist $name | grep 'vd' | awk '{ print $1 }')
+    for disk in ${blks}; do
+        cmdargs+=(--diskspec "$disk,snapshot=external")
+    done
+
+    echo "-> Creating VM Snapshot '$snap' for '$name'"
+    if [ $dryrun -eq 0 ]; then
+        ( $virsh snapshot-create-as $name $snap ${cmdargs[@]} )
+    else
+        echo "$virsh snapshot-create-as $name $snap ${cmdargs[@]} "
+    fi
+    rt=$?
+    ;;
+
+# -- SNAPSHOT REVERT
+snapshot-revert)
+    snap="${args[0]}"
+ 
+    if [ -z "$snap" ]; then
+        echo "$PNAME Error, snapshot name required." >&2
+        exit 1
+    fi
+
+    if vm_is_running $name; then
+        echo "$PNAME does not support reverting snapshots while vm is running" >&2
+        echo "Stop the vm first or use 'virsh' directly with --running" >&2
+        exit 2
+    fi
+    
+    if [ $dryrun -eq 0 ]; then 
+        ( $virsh snapshot-revert $name $snap )
+    else
+        echo "( $virsh snapshot-revert $name $snap )"
+    fi
+    rt=$?
+    ;;
+
+# -- SNAPSHOT DELETE
+snapshot-delete)
+    snap="${args[0]}"
+ 
+    if [ -z "$snap" ]; then
+        echo "$PNAME Error, snapshot name required." >&2
+        exit 1
+    fi
+
+    if vm_is_running $name; then
+        echo "$PNAME does not support deleting snapshots while vm is running" >&2
+        echo "Stop the vm first or use 'virsh' directly with --running" >&2
+        exit 2
+    fi
+
+    if [ $dryrun -eq 0 ]; then
+        ( $virsh snapshot-delete $name $snap )
+    else
+        echo "( $virsh snapshot-delete $name $snap )"
+    fi
+    rt=$?
+    ;;
+
+# -- SNAPSHOT INFO
+snapshot-info)
+    snap="${args[0]}"
+ 
+    if [ -z "$snap" ]; then
+        echo "$PNAME Error, snapshot name required." >&2
+        exit 1
+    fi
+
+    ( $virsh snapshot-info $name $snap )
+    rt=$?
+    ;;
+
+snapshot-list)
+    ( $virsh snapshot-list $name )
+    rt=$?
+    ;;
+
+# --- PASSTHROUGH OPERATIONS to virsh
+start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|define|dom*|edit|checkpoint-*|net*|iface-*|nwfilter-*)
+    if [ $dryrun -eq 0 ]; then
+        ( $virsh $action $name $args )
+    else
+        echo "( $virsh $action $name $args )"
+    fi
+    rt=$?
+    ;;
+
 *)
     echo "$PNAME action missing or not recognized." >&2
     echo "$usage"
+    rt=1
     ;;
 esac
 

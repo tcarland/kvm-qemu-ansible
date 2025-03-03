@@ -110,13 +110,14 @@ storage pool would be a NFS Share for storing source images, cloned VMs, snapsho
   ```
   # default pool is our local, primary storage pool.
   # kvmsh will create, build, and start the pool
-  clush -B -g lab 'kvmsh create-pool /data01/primary default'
+  clush -B -g lab 'kvmsh create-pool /data01/kvm-primary default'
   clush -B -g lab 'kvmsh pool-autostart default'
   ```
+
   For reference purposes, the following is the `virsh` equivalent of the above
   commands:
   ```
-  clush -B -g lab 'virsh --connect qemu:///system pool-define-as default dir - - - - "/data01/primary"'
+  clush -B -g lab 'virsh --connect qemu:///system pool-define-as default dir - - - - "/data01/kvm-primary"'
   clush -B -g lab 'virsh --connect qemu:///system pool-build default'
   clush -B -g lab 'virsh --connect qemu:///system pool-start default'
   clush -B -g lab 'virsh --connect qemu:///system pool-autostart default'
@@ -125,11 +126,11 @@ storage pool would be a NFS Share for storing source images, cloned VMs, snapsho
 - If the NFS Server role was deployed and, for example, the share is available as
   '/secondary', we would add the storage-pool same as above.
   ```
-  clush -B -g lab 'kvmsh create-pool /secondary secondary'
+  clush -B -g lab 'kvmsh create-pool /kvm-secondary secondary'
   ```
   The virsh equivalent to above:
   ```
-  clush -B -g lab 'virsh --connect qemu:///system pool-define-as secondary dir - - - - "/secondary"'
+  clush -B -g lab 'virsh --connect qemu:///system pool-define-as secondary dir - - - - "/kvm-secondary"'
   clush -B -g lab 'virsh --connect qemu:///system pool-build secondary'
   clush -B -g lab 'virsh --connect qemu:///system pool-start secondary'
   ```
@@ -140,6 +141,15 @@ storage pool would be a NFS Share for storing source images, cloned VMs, snapsho
   # virsh equivalent command
   clush -B -g lab 'virsh --connect qemu:///system pool-list --all'
   ```
+
+- Ensure AppArmor permissions are configured for the storage location.  
+  On systems using AppArmor, issues can arrive with block file chains created 
+  from external snapshots. Add permissions to the apparmor local profile, 
+  */etc/apparmor.d/local/abstractions/libvirt-qemu* 
+  ```
+  /data01/kvm-primary/** rwk,
+  /kvm-secondary/** rwk,
+  ``` 
 
 ## Creating a Base VM Image
 
