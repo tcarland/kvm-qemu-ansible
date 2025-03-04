@@ -10,10 +10,10 @@ kvm_qemu_groups:
 
 nfs_domain: 'tdh.internal'
 nfs_storage_server: 'tdh01.tdh.internal'
-nfs_storage_export: '/data01/secondary'
-nfs_storage_mountpoint: '/secondary'
+nfs_storage_export: '/data01/kvm-secondary'
+nfs_storage_mountpoint: '/kvm-secondary'
 
-kvm_primary_storage: '/data01/primary'
+kvm_primary_storage: '/data01/kvm-primary'
 
 dnsmasq_kvm_domain: 'tdh.internal'
 dnsmasq_primary_resolver: '8.8.8.8'
