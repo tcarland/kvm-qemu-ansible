@@ -49,6 +49,16 @@ that the same path is used across all nodes, which is then provided to Ansible.
   Again, these volumes should already exist and be mounted to the nodes prior
 to running the playbooks.
 
+### Snapshots and Apparmor
+
+On some systems, the use of external snapshots causes a conflict in *apparmor* 
+as the chain of snapshot block files are not added causing a denial and 
+resulting failure to start Virtual Machines. To avoid this, as superuser,
+add a permission to */etc/apparmor.d/local/abstractions/libvirt-qemu*
+```
+# permit primary storage files
+/path/to/kvm-primary/** rwk,
+```
 
 ## Networking
 

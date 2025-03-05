@@ -14,6 +14,39 @@
     state: present
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
+- name: Add Users to libvirt/kvm group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: "{{ kvm_qemu_groups }}"
+    append: true
+  become: true
+  with_items: "{{ kvm_qemu_users }}"
+
+- name: Create KVM Primary Storage Pool directory
+  ansible.builtin.file:
+    path: "{{ kvm_primary_storage }}"
+    owner: root
+    group: kvm
+    mode: "0775"
+    state: directory
+  become: true
+
+- name: Configure Sysctl
+  become: true
+  ansible.builtin.template:
+    src: sysctl.conf.j2
+    dest: /etc/sysctl.conf
+    mode: "0644"
+  notify: Source_sysctl
+
+- name: Configure AppArmor
+  become: true
+  ansible.builtin.template:
+    src: apparmor-libvirt.j2
+    dest: /etc/apparmor.d/local/abstractions/libvirt-qemu
+    mode: "0644"
+  notify: Restart_apparmor
+
 - name: Copy libvirtd.conf
   become: true
   ansible.builtin.copy:
@@ -48,28 +81,3 @@
     state: present
   become: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
-
-- name: Configure sysctl
-  become: true
-  ansible.builtin.template:
-    src: sysctl.conf.j2
-    dest: /etc/sysctl.conf
-    mode: "0644"
-  notify: Source_sysctl
-
-- name: Add Users to libvirt/kvm group
-  ansible.builtin.user:
-    name: "{{ item }}"
-    groups: "{{ kvm_qemu_groups }}"
-    append: true
-  become: true
-  with_items: "{{ kvm_qemu_users }}"
-
-- name: Create KVM Primary Storage Pool directory
-  ansible.builtin.file:
-    path: "{{ kvm_primary_storage }}"
-    owner: root
-    group: kvm
-    mode: "0775"
-    state: directory
-  become: true
