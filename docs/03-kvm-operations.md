@@ -558,3 +558,7 @@ running, is currently not supported.
 Snapshot operations are straight-forward commands that take the vm name 
 and the snapshot name where appropriate. The primary commands are
 *snapshot-create*, *snapshot-delete*, *snapshot-revert* and *snapshot-info*.
+
+Note that *snapshot-revert* is not currently supported with external 
+snapshots in kvm-qemu and must be reverted manually via *edit*. Though
+kvmsh may look to implemnt the manual steps in the future.
