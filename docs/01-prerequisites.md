@@ -13,9 +13,10 @@ This document covers the prerequisites needed for deploying a KVM cluster.
 
 
 ## Virtualization Extensions
+
 VT-d enabled in the BIOS results in the **vmx** extension existing in cpu 
 features. Ensure this extension is enabled for all nodes.
-```
+```sh
 lscpu | grep vmx
 ```
 
@@ -49,16 +50,6 @@ that the same path is used across all nodes, which is then provided to Ansible.
   Again, these volumes should already exist and be mounted to the nodes prior
 to running the playbooks.
 
-### Snapshots and Apparmor
-
-On some systems, the use of external snapshots causes a conflict in *apparmor* 
-as the chain of snapshot block files are not added causing a denial and 
-resulting failure to start Virtual Machines. To avoid this, as superuser,
-add a permission to */etc/apparmor.d/local/abstractions/libvirt-qemu*
-```
-# permit primary storage files
-/path/to/kvm-primary/** rwk,
-```
 
 ## Networking
 
@@ -71,7 +62,7 @@ taken with the below network configurations. It is highly advisable to ensure
 proper console access is available, as mistakes can render the node unreachable.
 
 Disable the use of NetworkManager on all cluster nodes:
-```
+```sh
 clush -a 'sudo systemctl stop NetworkManager'
 clush -a 'sudo systemctl disable NetworkManager'
 ```

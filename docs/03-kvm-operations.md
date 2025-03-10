@@ -24,6 +24,8 @@ KVM Operation guide for managing VMs across a KVM Cluster.
 - [Validate Host Resources](#validate-host-resources)
   - [Create a Consolidated Manifest](#create-a-consolidated-manifest)
 - [Migrating Virtual Machines in Offline Mode](#migrating-virtual-machines-in-offline-mode)
+- [Adding Disks to a Virtual Machine, Offline](#adding-disks-to-a-virtual-machine-offline)
+- [Virtual Machine Snapshots](#virtual-machine-snapshots)
 
 
 ## Overview
@@ -83,7 +85,7 @@ The requirements for running the tools are:
    but is very useful and recommended.
 
 - The 'kvmsh' utility to be distributed to all nodes and placed in the system path.
-  ```
+  ```sh
   clush -g lab --copy kvmsh
   clush -g lab 'sudo cp kvmsh /usr/local/bin'
   clush -g lab 'rm kvmsh'
@@ -107,7 +109,7 @@ storage pool would be a NFS Share for storing source images, cloned VMs, snapsho
 
 - Creating the primary storage pool. Note the storage pool path should be made 
   consistent across all nodes.
-  ```
+  ```sh
   # default pool is our local, primary storage pool.
   # kvmsh will create, build, and start the pool
   clush -B -g lab 'kvmsh create-pool /data01/kvm-primary default'
@@ -116,7 +118,7 @@ storage pool would be a NFS Share for storing source images, cloned VMs, snapsho
 
   For reference purposes, the following is the `virsh` equivalent of the above
   commands:
-  ```
+  ```sh
   clush -B -g lab 'virsh --connect qemu:///system pool-define-as default dir - - - - "/data01/kvm-primary"'
   clush -B -g lab 'virsh --connect qemu:///system pool-build default'
   clush -B -g lab 'virsh --connect qemu:///system pool-start default'
@@ -125,18 +127,18 @@ storage pool would be a NFS Share for storing source images, cloned VMs, snapsho
 
 - If the NFS Server role was deployed and, for example, the share is available as
   '/secondary', we would add the storage-pool same as above.
-  ```
+  ```sh
   clush -B -g lab 'kvmsh create-pool /kvm-secondary secondary'
   ```
   The virsh equivalent to above:
-  ```
+  ```sh
   clush -B -g lab 'virsh --connect qemu:///system pool-define-as secondary dir - - - - "/kvm-secondary"'
   clush -B -g lab 'virsh --connect qemu:///system pool-build secondary'
   clush -B -g lab 'virsh --connect qemu:///system pool-start secondary'
   ```
 
 - Verify the pools via pool-list:
-  ```
+  ```sh
   clush -B -g lab 'kvmsh pool-list'
   # virsh equivalent command
   clush -B -g lab 'virsh --connect qemu:///system pool-list --all'
@@ -145,7 +147,8 @@ storage pool would be a NFS Share for storing source images, cloned VMs, snapsho
 - Ensure AppArmor permissions are configured for the storage location.  
   On systems using AppArmor, issues can arrive with block file chains created 
   from external snapshots. Add permissions to the apparmor local profile, 
-  */etc/apparmor.d/local/abstractions/libvirt-qemu* 
+  */etc/apparmor.d/local/abstractions/libvirt-qemu*. The provided Ansible 
+  should configure these permissions.
   ```
   /data01/kvm-primary/** rwk,
   /kvm-secondary/** rwk,
@@ -166,15 +169,15 @@ available to all hosts.
 When creating a new VM, the `kvmsh` script looks for the source ISO in a path
 relative to the storage pool in use, so we ensure the ISO is also stored in the
 same storage pool.
-```
-$ ssh nfs01 'ls -l /kvm-secondary'
+```sh
+ssh nfs01 'ls -l /kvm-secondary'
 total 10430984
 -rw-rw-r-- 1 libvirt-qemu kvm  1215168512 Mar 29 07:27 ubuntu-24.04.1-live-server-amd64.iso
 ```
 
 The base VM can then be created on any node and pointed to the secondary pool.
-```
-$ kvmsh --pool secondary --console create ubuntu24.04
+```sh
+kvmsh --pool secondary --console create ubuntu24.04
 ```
 
 This will attach to the console of the new VM to provide access to the
@@ -188,9 +191,9 @@ total 8175440
 ```
 
 Another example using a larger boot disk (default is 40G)
-```
+```sh
 KVMSH_DEFAULT_IMAGE="CentOS-7-x86_64-Minimal-2003.iso"
-$ kvmsh --pool secondary --bootsize 80 --console --os centos7 create centos7-80
+kvmsh --pool secondary --bootsize 80 --console --os centos7 create centos7-80
 ```
 
 Once installed, we can add some additional requirements that are needed
@@ -209,14 +212,14 @@ this and some other items worth configuring into the base image:
 The final step would be to stop the VM and acquire the
 XML Definition for use across all remaining nodes to define our source VM.
 ```sh
-$ kvmsh stop ubuntu24.04
-$ kvmsh dumpxml ubuntu24.04 > ubuntu2404.xml
+kvmsh stop ubuntu24.04
+kvmsh dumpxml ubuntu24.04 > ubuntu2404.xml
 
 # copy xml to all hosts
-$ clush -g lab --copy ubuntu2404.xml
+clush -g lab --copy ubuntu2404.xml
 
 # Now we define our base VM across all nodes
-$ clush -g lab 'kvmsh define ubuntu2404.xml'
+clush -g lab 'kvmsh define ubuntu2404.xml'
 ```
 
 ### Ubuntu Installs
@@ -269,8 +272,8 @@ interface *virbr0* or `--network "bridge=virbr0"` provided to *kvmsh*.
 
 Building the environment is accomplished by providing the JSON manifest 
 to the `kvm-mgr.sh` script.
-```
-$ ./bin/kvm-mgr.sh build manifest.json
+```sh
+./bin/kvm-mgr.sh build manifest.json
 ```
 This defaults to using a source VM to clone called 'ubuntu20.04', but the
 script will take the source vm as a parameter (--srcvm) if desired.
@@ -291,16 +294,16 @@ for statically assigning IP's to the new VMs as well as /etc/hosts.
 ## Starting VMs and Setting Hostnames
 
 Once built, the VMs can be started by via the 'start' action:
-```
- $ ./bin/kvm-mgr.sh start manifest.json
+```sh
+./bin/kvm-mgr.sh start manifest.json
 ```
 
 NOTE: The new VM's will all have the same 'ubuntu2004' hostname as a result 
 of the clone process (or whatever hostname was used on the base image). The 
 script provides the 'sethostname' action to iterate through all VM's in a 
 manifest and set the hostname(s) accordingly.
-```
- $ ./bin/kvm-mgr.sh sethostnames manifest.json
+```sh
+./bin/kvm-mgr.sh sethostnames manifest.json
 ```
 
 ## Modifying Existing VMs
@@ -311,22 +314,22 @@ which can be done on a live host up to the `MaxMemoryGB` limit defined for
 the VM. Most other changes to the VM generally require stopping the VM first
 to edit the VM. whether by *virsh* or by XML. The XML should not be edited by
 hand, but if absolutely necessary, the VM should be undefined first.
-```
- $ kvmsh dumpxml tdh-m01 > tdh-m01.xml
- $ vmsh undefine tdh-m01
- #  [ edit the XML ]
- $ kvmsh define tdh-m01.xml
+```sh
+kvmsh dumpxml tdh-m01 > tdh-m01.xml
+vmsh undefine tdh-m01
+#  [ edit the XML ]
+kvmsh define tdh-m01.xml
 ```
 
 Often, simply rebuilding the VM's is the fastest route. To do so, we would
 define a focused manifest for just the VMs to be affected. Destroy the
 current VMs, update the manifest as desired, and rebuild the VMS.
-```
- $ cp all.json zookeepers.json
- $ vi zookeepers.json         # reduce manifest to only the hosts in question
- $ ./bin/kvm-mgr.sh delete zookeepers.json
- $ vi zookeepers.json         # update values as desired
- $ ./bin/kvm-mgr.sh -x centos7.xml build
+```sh
+cp all.json zookeepers.json
+vi zookeepers.json         # reduce manifest to only the hosts in question
+./bin/kvm-mgr.sh delete zookeepers.json
+vi zookeepers.json         # update values as desired
+./bin/kvm-mgr.sh -x centos7.xml build
 ```
 
 Note that any adjustments to live instances that wish to be persisted should
@@ -336,7 +339,7 @@ Resizing disks requires the VM to be stopped. Use the *qemu-img* tool to
 resize the disk and then follow normal filesystem methods to grow or shrink 
 the filesystem. Alternatively, the *virt-resize* command can lvexpand and
 grow the filesystem in one command.
-```
+```sh
 qemu-img resize -f raw <path/to/disk.img> [(+|-)size(k, M, G or T)]
 ```
 
@@ -346,7 +349,7 @@ Terminology in KVM land, namely virsh from libvirt, defines the term `destroy`
 for terminating VMs and is synonymous to `stop`. These actions also work
 via the manifest for stopping a group of VMs across the cluster. Individual VMs
 can be stopped directly using the local 'kvmsh' script.
-```
+```sh
 ssh sm-04 'kvmsh stop tdh-m01'
 ```
 
@@ -361,19 +364,18 @@ unless the `--keep-disks` option is provided.
 
  If the environment is wiped or vms deleted manually, the volumes
 might persist in the storage pool without having the VM defined.
+```sh
+ssh t05 'kvmsh delete tdh-d03'
+Domain tdh-d03 has been undefined
 
-```
- $ ssh t05 'kvmsh delete tdh-d03'
- Domain tdh-d03 has been undefined
-
- $ ssh t05 'kvmsh vol-list'
+ssh t05 'kvmsh vol-list'
  tdh-d01-vda.img /data01/primary/tdh-d01-vda.img
  tdh-d01-vdb.img /data01/primary/tdh-d01-vdb.img
  tdh-d03-vda.img /data01/primary/tdh-d03-vda.img
  tdh-d03-vdb.img /data01/primary/tdh-d03-vdb.img
 
- $ ssh sm-05 'kvmsh vol-delete tdh-d03-vda.img'
- $ ssh sm-05 'kvmsh vol-delete tdh-d03-vdb.img'
+ssh sm-05 'kvmsh vol-delete tdh-d03-vda.img'
+ssh sm-05 'kvmsh vol-delete tdh-d03-vdb.img'
 ```
 
 Or in a more convenient fashion:
@@ -412,7 +414,7 @@ for x in $( kvmsh vol-list | grep $vmname | \
 
 - Now delete the VMs, noting all disks are also removed.
   ```
-  $ ~/bin/kvm-mgr.sh delete tdh-datanodes.json
+  ~/bin/kvm-mgr.sh delete tdh-datanodes.json
   WARNING! 'delete' action will remove all VM's!
       (Consider testing with --dryrun option)
   Are you certain you wish to continue?  [y/N] y
@@ -433,8 +435,8 @@ for x in $( kvmsh vol-list | grep $vmname | \
   multiple nodes. Note the *kvm-mgr.sh* switch `--keep-disks` to
   save the volumes.
   ```
-  $ ./bin/kvm-mgr.sh dumpxml tdh-datanodes.json
-  $ ./bin/kvm-mgr.sh --keep-disks delete tdh-datanodes.json
+  ./bin/kvm-mgr.sh dumpxml tdh-datanodes.json
+  ./bin/kvm-mgr.sh --keep-disks delete tdh-datanodes.json
   ```
 
 
@@ -443,7 +445,7 @@ for x in $( kvmsh vol-list | grep $vmname | \
 The `vm-consumption.sh` script will provide the resource consumptions per node.
 The input parameter is a JSON manifest file.
 ```sh
-$ ./bin/vm-consumptions.sh <manifest.json>
+./bin/vm-consumptions.sh <manifest.json>
 ```
 
 
@@ -451,11 +453,10 @@ $ ./bin/vm-consumptions.sh <manifest.json>
 
 The `mergeAllManifests.sh` script is used to consolidate all JSON manifests,
 under `~/manifests` by default, into one for use with `vm-consumptions.sh`.
-```
-$ ~/bin/mergeAllManifests.sh
-$ cp manifest.json ~/kvm-manifest.json
-
-$ ./bin/vm-consumptions.sh ~/kvm-manifest.json
+```sh
+~/bin/mergeAllManifests.sh
+cp manifest.json ~/kvm-manifest.json
+./bin/vm-consumptions.sh ~/kvm-manifest.json
 
 t01 :
   cpus total:  96  memory total:  512
@@ -531,7 +532,7 @@ Steps to Migrate:
 Lastly, update the manifest accordingly.
 
 
-## Add disks to a Virtual Machine Offline
+## Adding disks to a Virtual Machine Offline
 
 - Stop the vm
   ```
@@ -541,3 +542,19 @@ Lastly, update the manifest accordingly.
   ```
   kvmsh -D 2 -d 40G attach-disk <name>
   ```
+
+## Virtual Machine Snapshots
+
+Typically snapshots within KVM-Qemu require disk images in the *qcow2* 
+format, though these are considered *internal* snapshots. These style 
+snapshots are considered to be less reliable and can potentially end in 
+image corruption. 
+
+Instead, *kvmsh* implements external snapshots only, which support either 
+raw or qcow images. The current implementation supports snapshotting the 
+image state only, while the host is offline.  Machine memory state, while 
+running, is currently not supported.
+
+Snapshot operations are straight-forward commands that take the vm name 
+and the snapshot name where appropriate. The primary commands are
+*snapshot-create*, *snapshot-delete*, *snapshot-revert* and *snapshot-info*.
