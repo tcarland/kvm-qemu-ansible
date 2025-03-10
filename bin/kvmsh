@@ -878,8 +878,8 @@ snapshot-revert)
     fi
     
     # 
-    #xq --xml-output '(.domain.devices.disk[] | select(.source.file | contains("tdh-base00")) | .source.file) = "/new/path/to/image.raw" | \
-    #  (.domain.devices.disk[] | select(.source.file | contains("tdh-base00")) | .driver.type) = "raw"' input.xml
+    #xq --xml-output '(.domain.devices.disk[] | select(.source.file | contains("${name}")) | .source.file) = "/new/path/to/image.raw" | \
+    #  (.domain.devices.disk[] | select(.source.file | contains("${name}")) | .driver.type) = "raw"' input.xml
 
     if [ $dryrun -eq 0 ]; then 
         ( $virsh snapshot-revert $name --snapshotname $snap )
