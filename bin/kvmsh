@@ -147,6 +147,13 @@ list_all_pools()
 }
 
 
+list_snaps()
+{
+    local name="$1"
+    ( $virsh snapshot-list $name --external --disk-only | grep 'snap' | awk '{ print $1 }' | sort)
+}
+
+
 vm_is_running()
 {
     local vm="$1"
@@ -846,7 +853,7 @@ snapshot|snapshot-create*)
         echo "Stop the vm first or use 'virsh' directly with --running" >&2
         exit 2
     fi
-    
+
     cmdargs=(--disk-only --atomic)
     blks=$(virsh domblklist $name | grep 'vd' | awk '{ print $1 }')
     for disk in ${blks}; do
@@ -905,9 +912,9 @@ snapshot-delete)
     fi
 
     if [ $dryrun -eq 0 ]; then
-        ( $virsh snapshot-delete $name $snap )
+        ( $virsh snapshot-delete $name --snapshotname $snap --children )
     else
-        echo "( $virsh snapshot-delete $name $snap )"
+        echo "( $virsh snapshot-delete $name --snapshotname $snap --children )"
     fi
     rt=$?
     ;;
