@@ -67,7 +67,7 @@ inventory path of **inventory/$env/group_vars/all/vault**.
 The inventory for hosts falls into 4 groups, *mgmt_server*, *kvm_nodes*
 (the KVM cluster nodes), and optional *nfs_server* and *nfs_client* groups 
 for configuring NFS-based secondary storage.
-```
+```ini
 [kvm_nodes]
 dil[01:08]
 
@@ -111,11 +111,11 @@ can be applied via the common role.
 ## Running Ansible playbooks
 
 Deploy KVM-QEMU hypervisor across nodes.
-```
+```sh
 ansible-playbook -i inventory/tdh-west1/hosts kvm-qemu.yml
 ```
 
 Install the management tools.
-```
+```sh
 ansible-playbook -i inventory/tdh-west1/hosts kvm-mgr.yml
 ```
