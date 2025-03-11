@@ -119,3 +119,4 @@ Install the management tools.
 ```sh
 ansible-playbook -i inventory/tdh-west1/hosts kvm-mgr.yml
 ```
+

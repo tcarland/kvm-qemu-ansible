@@ -113,8 +113,14 @@ via Ansible as described in the next [document](02-kvm-ansible.md).
 Ansible should be the only package requirement needed for running the 
 playbooks, which in turn installs the required KVM related packages as 
 defined by *roles/kvm-qemu/vars/main.yml*. The playbooks currently target, 
-and have been tested against, RHEL/CentOS 7 and Ubuntu 20.04 Focal using 
-Ansible version 2.9.6.
+and have been tested against, RHEL/CentOS 7+ and Ubuntu 22.04+ using 
+Ansible version 8.5.0.
+```bash
+sudo apt install python3-pip python3-venv
+python3 -m venv pyansible
+source pyansible/bin/activate
+pip install ansible==8.5.0
+```
 
 
 ## Management plane
