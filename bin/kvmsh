@@ -120,7 +120,7 @@ Actions:
   console         <name>  : Connect to the VM console.
   mac-addr        <name>  : Print HW MacAddress for the given VM.
     ---- Snapshots ----
-  snapshot-*      <n> <s> : create|delete|revert|info  <name> <snapshot>
+  snapshot-*      <n> <s> : create|delete|info  <name> <snapshot>
   snapshot-list   <name>  : List the snapshosts for a vm.
 "
 
@@ -944,29 +944,8 @@ snapshot-create|create-snapshot)
 
 # -- SNAPSHOT REVERT
 snapshot-revert)
-    snap="${args[0]}"
- 
-    if [ -z "$snap" ]; then
-        echo "$PNAME Error, snapshot name required." >&2
-        exit 1
-    fi
-
-    if vm_is_running $name; then
-        echo "$PNAME does not support reverting snapshots while vm is running" >&2
-        echo "Stop the vm first or use 'virsh' directly with --running" >&2
-        exit 2
-    fi
-    
-    # 
-    #xq --xml-output '(.domain.devices.disk[] | select(.source.file | contains("${name}")) | .source.file) = "/new/path/to/image.raw" | \
-    #  (.domain.devices.disk[] | select(.source.file | contains("${name}")) | .driver.type) = "raw"' input.xml
-
-    if [ $dryrun -eq 0 ]; then 
-        ( $virsh snapshot-revert $name --snapshotname $snap )
-    else
-        echo "( $virsh snapshot-revert $name --snapshotname $snap )"
-    fi
-    rt=$?
+    echo "$PNAME does not support reverting snapshots."
+    echo "Stop the vm, and use 'kvmsh edit <dom>' to edit manually"
     ;;
 
 # -- SNAPSHOT DELETE
