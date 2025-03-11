@@ -8,7 +8,7 @@
 #  Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
-VERSION="v25.03.10"
+VERSION="v25.03.12"
 AUTHOR="tcarland@gmail.com"
 
 # ------------------------------------
