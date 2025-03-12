@@ -1,21 +1,22 @@
 KVM Ansible Deployment Guide
 ============================
 
-Ansible is used to bootstrap systems as well as optionally install the
-KVM stack and NFS Server/Clients.
+Ansible is used to bootstrap systems as well as install the KVM stack 
+and NFS Server/Clients.
 
-Prior to running the Ansible Playbooks, the base storage systems to be used for
-the primary storage pool (and optional NFS Server) should already be created and
-mounted. Additionally a network bridge for *br0* should be configured as
-described in the [01-prerequisites.md](docs/01-prerequisites.md) document.
+Prior to running the Ansible Playbooks, the base storage systems to be 
+used for the primary storage pool (and optional NFS Server) should already 
+be created and mounted. Additionally a network bridge for *br0* should be 
+configured as described in the [01-prerequisites.md](docs/01-prerequisites.md) 
+document.
 
 
 ## Configure Inventory
 
 The following inventory settings from *inventory/$env/group_vars/all/vars*
-should be customized to provide the domain settings, storage locations, and IP
-Address ranges. The following inventory example uses a common role-account called
-*tdh* for managing KVM and is added to the three primary groups needed.
+should be customized to provide the domain settings, storage locations, and 
+IP Address ranges. The following inventory example uses a common role-account 
+called *tdh* for managing KVM and is added to the three primary groups needed.
 
 **inventory/$env/group_vars/all/vars**
 ```yaml
@@ -102,10 +103,10 @@ dim01
 
 ## Adding users
 
-  To add new users, adjust the inventory *group_vars/all.yml* to reflect
-the new user and user group. It is important to verify that the uid:gid chosen
-are in fact available and not already in use across nodes. The new settings
-can be applied via the common role.
+To add new users, adjust the inventory *group_vars/all.yml* to reflect
+the new user and user group. It is important to verify that the uid:gid 
+chosen are in fact available and not already in use across nodes. The new 
+settings can be applied via the common role.
 
 
 ## Running Ansible playbooks
@@ -119,4 +120,3 @@ Install the management tools.
 ```sh
 ansible-playbook -i inventory/tdh-west1/hosts kvm-mgr.yml
 ```
-

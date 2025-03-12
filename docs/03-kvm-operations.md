@@ -494,52 +494,54 @@ t05 :
 
 Live VM Migration is possible with libvirt and KVM, but not covered by
 this document. The following describes how to migrate VM's offline.  
+Just to be clear, offline migration implies the VM should always be 
+stopped first.
 
-- Of course, offline migration implies the VM should be stopped first.
-- This project configures and relies on primary storage being the same path
-  on all nodes, which makes moving VM's easier as little to no change to the
-  VM Specification is needed.
+This project configures and relies on the primary storage being the 
+same path on all nodes, which makes moving VM's easier as little to 
+no change to the VM Specification is needed.
 
 Steps to Migrate:
 
 1. Save the VM Specification.
-    ```
+    ```sh
     kvmsh dumpxml vmname > vmname.xml
     ```
 
-2. Copy vm disks to primary storage on alternate host.
+2. Copy vm disks to the primary storage on the alternate host.
 
-3. Copy the xml and define the new vm.
-    ```
+3. Copy the xml the new host and define the vm.
+    ```sh
     kvmsh define vmname.xml
     ```
 
-4. Remove the VM specification from the original host
-    ```
+4. Remove the VM specification from the original host.
+    ```sh
     kvmsh delete vmname.xml
-    ```Status
+    ```
 
 5. Remove volumes from original host
-    ```
-    kvmsh vol-delete volname.img
+    ```sh
+    kvmsh vol-delete vmname-vda.img
     ```
 
 6. Start the VM on the new host
-    ```
+    ```sh
     kvmsh start vmname
     ```
 
-Lastly, update the manifest accordingly.
+Lastly, update the kvm-mgr manifest accordingly.
 
 
 ## Adding disks to a Virtual Machine Offline
 
-- Stop the vm
-  ```
+- Stop the VM first
+  ```sh
   kvmsh stop <name>
   ```
-- Attach disks
-  ```
+
+- Create and attach the new disks
+  ```sh
   kvmsh -D 2 -d 40G attach-disk <name>
   ```
 
@@ -560,5 +562,8 @@ and the snapshot name where appropriate. The primary commands are
 *snapshot-create*, *snapshot-delete*, *snapshot-revert* and *snapshot-info*.
 
 Note that *snapshot-revert* is not currently supported with external 
-snapshots in kvm-qemu and must be reverted manually via *edit*. Though
-kvmsh may look to implemnt the manual steps in the future.
+snapshots in kvm-qemu and must be reverted manually via *edit*. 
+Note that external snapshots will work with *raw* disk images, but will 
+change the file-type to *qcow2* when pointing to a snapshot. If 
+manually reverting to the base img, ensure the type is also changed 
+back to *raw* to match.
