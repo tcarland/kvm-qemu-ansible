@@ -8,7 +8,7 @@
 #  Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
-VERSION="v25.03.10"
+VERSION="v25.03.12"
 AUTHOR="tcarland@gmail.com"
 
 # ------------------------------------
@@ -120,7 +120,7 @@ Actions:
   console         <name>  : Connect to the VM console.
   mac-addr        <name>  : Print HW MacAddress for the given VM.
     ---- Snapshots ----
-  snapshot-*      <n> <s> : create|delete|revert|info  <name> <snapshot>
+  snapshot-*      <n> <s> : create|delete|info  <name> <snapshot>
   snapshot-list   <name>  : List the snapshosts for a vm.
 "
 
@@ -131,6 +131,7 @@ version="$PNAME $VERSION"
 list_vms()
 {
     ( $virsh list --all )
+    return $?
 }
 
 
@@ -138,19 +139,22 @@ list_vols()
 {
     local poolname="${1:-default}"
     ( $virsh vol-list --pool $poolname )
+    return $?
 }
 
 
 list_all_pools()
 {
     ( $virsh pool-list --all --details )
+    return $?
 }
 
 
 list_snaps()
 {
     local name="$1"
-    ( $virsh snapshot-list $name --external --disk-only | grep 'snap' | awk '{ print $1 }' | sort)
+    ( $virsh snapshot-list $name --external | grep 'snap' | awk '{ print $1 }' | sort)
+    return $?
 }
 
 
@@ -257,6 +261,75 @@ get_num_drives()
       sed -E 's/vd(.)/\1/')
 
     return ${#devs}
+}
+
+
+get_snap_ver() {
+    local name="$1"
+    local snapdate="$2"
+    local snapver="00"
+    
+    snaps=$(list_snaps $name)
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    snaps=($(echo "$snaps" | grep "$snapdate"))
+
+    if [ ${#snaps[@]} -gt 0 ]; then
+        snapver="${snaps[((${#snaps[@]}-1))]}"
+        snapver=$( printf "%02d" $((${snapver: -2} + 1)) )
+    fi
+
+    echo "${snapdate}${snapver}"
+    return 0
+}
+
+
+find_snaps_after() {
+    local name="$1"
+    local snapname="$2"
+    local exists=false
+    
+    snaplist=($(list_snaps "$name"))
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+
+    results=()
+
+    for snap in ${snaplist[@]}; do
+        if [[ "$exists" == "true" ]]; then
+            results+=("$snap")
+        elif [[ "$snap" == "$snapname" ]]; then
+            exists="true"
+        fi
+    done
+
+    echo "${results[@]}"
+    return 0
+}
+
+
+snap_is_current() {
+    local name="$1"
+    local snapname="$2"
+
+    snaplist=$(find_snaps_after "$name" "$snapname")
+    if [ $? -ne 0 ]; then
+        echo "$PNAME Error in find_snaps_after" >&2
+        return 2
+    fi
+    snaplist="$snapname ${snaplist[@]}"
+
+    for snap in ${snaplist[@]}; do
+        cur=$($virsh snapshot-info $name $snap 2>/dev/null | \
+              grep 'Current:' | awk '{ print $2 }')
+        if [[ "$cur" == "yes" ]]; then
+            return 0
+        fi
+    done
+
+    return 1
 }
 
 # ------------------------------------------------
@@ -840,18 +913,18 @@ os-list|os-info)
     ;;
 
 # -- SNAPSHOT CREATE
-snapshot|snapshot-create*)
-    snap="${args[0]}"
-
-    if [ -z "$snap" ]; then
-        echo "$PNAME Error, snapshot name required." >&2
-        exit 1
-    fi
+snapshot-create|create-snapshot)
+    snap=$(date +'%04Y%02m%02d')
 
     if vm_is_running $name; then
         echo "$PNAME does not support snapshots while vm is running" >&2
-        echo "Stop the vm first or use 'virsh' directly with --running" >&2
         exit 2
+    fi
+
+    snap="snap-$(get_snap_ver $name $snap)"
+    if [ $? -ne 0 ]; then
+        echo "$PNAME Error determining snapshot version for '$name'" >&2
+        exit 1
     fi
 
     cmdargs=(--disk-only --atomic)
@@ -871,29 +944,8 @@ snapshot|snapshot-create*)
 
 # -- SNAPSHOT REVERT
 snapshot-revert)
-    snap="${args[0]}"
- 
-    if [ -z "$snap" ]; then
-        echo "$PNAME Error, snapshot name required." >&2
-        exit 1
-    fi
-
-    if vm_is_running $name; then
-        echo "$PNAME does not support reverting snapshots while vm is running" >&2
-        echo "Stop the vm first or use 'virsh' directly with --running" >&2
-        exit 2
-    fi
-    
-    # 
-    #xq --xml-output '(.domain.devices.disk[] | select(.source.file | contains("${name}")) | .source.file) = "/new/path/to/image.raw" | \
-    #  (.domain.devices.disk[] | select(.source.file | contains("${name}")) | .driver.type) = "raw"' input.xml
-
-    if [ $dryrun -eq 0 ]; then 
-        ( $virsh snapshot-revert $name --snapshotname $snap )
-    else
-        echo "( $virsh snapshot-revert $name --snapshotname $snap )"
-    fi
-    rt=$?
+    echo "$PNAME does not support reverting snapshots."
+    echo "Stop the vm, and use 'kvmsh edit <dom>' to edit manually"
     ;;
 
 # -- SNAPSHOT DELETE
@@ -909,6 +961,16 @@ snapshot-delete)
         echo "$PNAME does not support deleting snapshots while vm is running" >&2
         echo "Stop the vm first or use 'virsh' directly with --running" >&2
         exit 2
+    fi
+
+    if snap_is_current $name $snap; then
+        if [ $? -eq 2 ]; then
+            echo "$PNAME Error, snapshot-delete aborted." >&2
+            exit 2
+        fi
+        echo "$PNAME Error, snapshot or its children are current"
+        echo " 'snapshot-revert' to an older snapshot first"
+        exit 1
     fi
 
     if [ $dryrun -eq 0 ]; then
@@ -932,8 +994,8 @@ snapshot-info)
     rt=$?
     ;;
 
-snapshot-list)
-    ( $virsh snapshot-list $name )
+snapshot-list|list-snapshot)
+    ( $virsh snapshot-list $name --external )
     rt=$?
     ;;
 

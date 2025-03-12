@@ -3,7 +3,7 @@
 #  Creates and manages KVM infrastructure using a JSON manifest.
 #
 PNAME=${0##*\/}
-VERSION="v25.03.10"
+VERSION="v25.03.12"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -603,7 +603,7 @@ setresource*)
             maxmem=$(jq -r ".[$i].vmspecs | .[$v].maxMemoryGb" $manifest)
 
             if vm_is_running "$host" "$name"; then
-                echo " -> VM appears to be running, please stop first. Skipping '$name'.."
+                echo " -> VM appears to be running, please stop first. Skipping '$name'.." >&2
                 continue
             fi
 
