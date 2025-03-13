@@ -12,7 +12,7 @@
   ansible.builtin.apt:
     name: "{{ kvm_qemu_apt }}"
     state: present
-  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu' or ansible_distribution == 'Pop!_OS'
 
 - name: Add Users to libvirt/kvm group
   ansible.builtin.user:
