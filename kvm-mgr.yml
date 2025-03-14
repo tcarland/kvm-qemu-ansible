@@ -2,6 +2,7 @@
 - name: Install Management Server role
   hosts: mgmt_server
   gather_facts: true
+  tags: ['mgmt']
   roles:
     - mgmt_server
 
@@ -10,10 +11,10 @@
   gather_facts: false
   tasks:
     - name: Install kvmsh..
+      become: true
       ansible.builtin.copy:
         src: "{{ kvmsh_bin }}"
         dest: /usr/local/bin
         mode: "0755"
         owner: root
         group: kvm
-      become: true

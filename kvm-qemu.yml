@@ -2,20 +2,17 @@
 - name: Configure NFS Server
   hosts: nfs_server
   gather_facts: true
-  tags: [nfs]
   roles:
-    - nfs_server
+    - {role: "nfs_server", tags: "nfs"}
 
 - name: Configure NFS Clients
   hosts: nfs_client
   gather_facts: true
-  tags: [nfs]
   roles:
-    - nfs_client
+    - {role: "nfs_client", tags: "nfs"}
 
 - name: Configure KVM
   hosts: kvm_nodes
   gather_facts: true
-  tags: [nfs]
   roles:
-    - kvm_qemu
+    - {role: "kvm_qemu", tags: "kvm"}

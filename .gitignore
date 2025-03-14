@@ -8,6 +8,6 @@
 *.zip
 *.pdf
 
-**/.ansible
-ansible/inventory/**
-!ansible/inventory/example
+.ansible
+inventory/**
+!inventory/example
