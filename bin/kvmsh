@@ -8,7 +8,7 @@
 #  Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
-VERSION="v25.03.12"
+VERSION="v25.03.16"
 AUTHOR="tcarland@gmail.com"
 
 # ------------------------------------
@@ -52,51 +52,51 @@ declare -A poolmap
 # ------------------------------------
 
 usage="
-A command-line tool for manipulating KVM based virtual machines 
+A command-line tool for manipulating KVM based virtual machines
 wrapping the use of kvm tools 'virsh', 'virt-install', and 'virt-clone'.
 
-This is intended for automation and scripting of kvm management with 
+This is intended for automation and scripting of kvm management with
 some sane defaults for simplifying usage.
 
-The parameters all mirror 'virsh' closely and most virsh options are 
-either overloaded or passed through directly to virsh allowing 'kvmsh' 
+The parameters all mirror 'virsh' closely and most virsh options are
+either overloaded or passed through directly to virsh allowing 'kvmsh'
 to be used in place of 'virsh'.
 
 Synopsis:
-  $PNAME [options] <action> <name> 
+  $PNAME [options] <action> <name>
 
 Options:
-  -b|--bootsize <xxG>     : Size of boot disk in Gb. Default is '$bootsz'. 
-  -C|--console            : Use serial console, sets 'none' for --graphics 
-  -c|--cpus     <n>       : Number of vcpus to allocate. 
+  -b|--bootsize <xxG>     : Size of boot disk in Gb. Default is '$bootsz'.
+  -C|--console            : Use serial console, sets 'none' for --graphics
+  -c|--cpus     <n>       : Number of vcpus to allocate.
   -D|--disknum  <n>       : Number of disks to be attached.
   -d|--disksize <xxG>     : Size of disk(s) to be attached with unit, eg. '100G'
   -f|--format   <type>    : VM disk type: 'qcow2|raw', Default is '$format'.
-  -G|--graphics <type>    : KVM Graphics type; 'vnc' or 'spice' (default). 
+  -G|--graphics <type>    : KVM Graphics type; 'vnc' or 'spice' (default).
                             -C|--console must not be set.
-  -h|--help               : Show usage info and exit. 
+  -h|--help               : Show usage info and exit.
   -i|--image    <name>    : Name of image, relative to storage pool, or a location.
   -I|--iso|--cdrom        : Treat image as a boot iso, ie. --cdrom to virt-install.
   -n|--dryrun             : Enable DRYRUN, Nothing is executed.
   -N|--network  <if>      : KVM Network, default is '$network'.
   -m|--memory   <Mib>     : Memory allocation in Mb and optionally max memory.
-                            eg. '--memory 1024' or '--memory $memory' 
-  -o|--os   <os-variant>  : Set virsh 'os-variant' for create. Default=$ubuntu 
+                            eg. '--memory 1024' or '--memory $memory'
+  -o|--os   <os-variant>  : Set virsh 'os-variant' for create. Default=$ubuntu
   -p|--pool    <name>     : Storage pool to use, if not '$pool'.
   -u|--uri     <uri>      : Set the KVM connect uri. Default is '$virt_uri'.
   -U|--no-uefi            : Disable UEFI boot support, enabled by default.
-  -V|--version            : Show version info and exit. 
+  -V|--version            : Show version info and exit.
 
-   <action>               : VM operation to perform, see below. 
-   <name>                 : Name of VM on which to operate the action. 
+   <action>               : VM operation to perform, see below.
+   <name>                 : Name of VM on which to operate the action.
 
-Actions: 
+Actions:
   clone  <srcvm> <destvm> : Clones vm (set --pool to move storage pools).
   create|delete   <name>  : Create or delete a VM (will not delete volumes).
   define           <xml>  : Import or define a VM from the provided XML.
   edit            <name>  : Edit the live XML configuration for a VM.
   undefine|delete <name>  : Remove a VM resource from virsh. Same as 'delete'
-  start|stop      <name>  : Start or stop a VM. 
+  start|stop      <name>  : Start or stop a VM.
    ---- Storage Pools ----
   pool-create   <dir> <n> : Creates a storage pool named <n> for a given dir.
   pool-start      <name>  : Activate an offline storage pool by name.
@@ -268,7 +268,7 @@ get_snap_ver() {
     local name="$1"
     local snapdate="$2"
     local snapver="00"
-    
+
     snaps=$(list_snaps $name)
     if [ $? -ne 0 ]; then
         return 1
@@ -289,7 +289,7 @@ find_snaps_after() {
     local name="$1"
     local snapname="$2"
     local exists=false
-    
+
     snaplist=($(list_snaps "$name"))
     if [ $? -ne 0 ]; then
         return 1
@@ -543,11 +543,11 @@ create)
         exit $rt
     fi
 
-    cmdargs=(--name "$name" 
-             --memory $memory 
-             --vcpus $vcpus 
-             --os-variant "$osvar" 
-             --disk "path=$diskimg" 
+    cmdargs=(--name "$name"
+             --memory $memory
+             --vcpus $vcpus
+             --os-variant "$osvar"
+             --disk "path=$diskimg"
              --network "$network")
 
     if [ $uefi -eq 0 ]; then
@@ -574,7 +574,7 @@ create)
             cmdargs+=("--graphics" "$spice" "--noautoconsole")
         fi
     fi
-    
+
     if [ $dryrun -eq 0 ]; then
         ( virt-install --connect $virt_uri ${cmdargs[@]} )
         rt=$?
@@ -588,7 +588,7 @@ create)
     ;;
 
 cli|shell)
-    virsh 
+    virsh
     ;;
 
 # --- CLONE VM
@@ -651,7 +651,7 @@ setmem|setmaxmem)
         echo "$PNAME error in arguments" >&2
         exit 1
     fi
-    
+
     mem="$args"
     live="--config"
 
@@ -818,7 +818,7 @@ pool-autostart)
 
 # --- START POOLS
 pool-start|start-pool)
-    if [ -n "$name" ]; then 
+    if [ -n "$name" ]; then
         pool="$name"
     fi
 
@@ -862,7 +862,7 @@ pool-delete|delete-pool)
         echo " -> Stopping storage pool '$pool'.."
         if [ $dryrun -eq 0 ]; then
             ( $virsh pool-destroy $pool )
-        else 
+        else
             echo "( $virsh pool-destroy $pool )"
         fi
     fi
@@ -879,7 +879,7 @@ pool-delete|delete-pool)
 # -- LIST POOLS
 pool-list|list-pool*)
     if [ ${#poolmap[@]} -eq 0 ]; then
-        echo " -> no pools found or defined.." 
+        echo " -> no pools found or defined.."
         exit 0
     fi
 
@@ -951,7 +951,7 @@ snapshot-revert)
 # -- SNAPSHOT DELETE
 snapshot-delete)
     snap="${args[0]}"
- 
+
     if [ -z "$snap" ]; then
         echo "$PNAME Error, snapshot name required." >&2
         exit 1
@@ -984,7 +984,7 @@ snapshot-delete)
 # -- SNAPSHOT INFO
 snapshot-info)
     snap="${args[0]}"
- 
+
     if [ -z "$snap" ]; then
         echo "$PNAME Error, snapshot name required." >&2
         exit 1

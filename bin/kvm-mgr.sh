@@ -3,7 +3,7 @@
 #  Creates and manages KVM infrastructure using a JSON manifest.
 #
 PNAME=${0##*\/}
-VERSION="v25.03.12"
+VERSION="v25.03.16"
 AUTHOR="Timothy C. Arland <tcarland@gmail.com>"
 
 pool="default"
@@ -29,11 +29,11 @@ usage="
 Creates and Manages KVM infrastructure from JSON Manifests.
 
 Synopsis:
-  $PNAME [options] <action> <manifest.json> 
+  $PNAME [options] <action> <manifest.json>
 
 Options:
   -K|--keep-disks    : On 'delete' volumes will kept.
-  -h|--help          : Show usage info and exit. 
+  -h|--help          : Show usage info and exit.
   -H|--hosts <file>  : Hosts file to update. Default is '$hostsfile'.
   -L|--lease <file>  : DnsMasq DHCP lease file. Default is '$leasecfg'.
   -p|--pool  <name>  : Storage pool to use, if not '$pool'.
@@ -43,7 +43,7 @@ Options:
   -X|--noprompt      : Disables interactive prompt on delete.
   -V|--version       : Show version info and exit.
 
-  <action>           : Action to perform: build|start|stop|delete 
+  <action>           : Action to perform: build|start|stop|delete
   <manifest.json>    : Name of the JSON manifest file.
 
 Actions:             (All actions require a manifest file)
@@ -55,14 +55,14 @@ Actions:             (All actions require a manifest file)
   delete             : Delete all VMs defined by the manifest.
   dumpxml            : Runs 'dumpxml' across the cluster locally.
                        The XML is saved to \$HOME on the host node.
-  sethostname        : Configures VM hostnames, if not using the default 
-                       source VM ($srcvm), set '--srcvm' accordingly. 
-  setresources       : Will run setvcpus, setmem and setmaxmem for each 
-                       VM in the manifest. VM's must be stopped. 
+  sethostname        : Configures VM hostnames, if not using the default
+                       source VM ($srcvm), set '--srcvm' accordingly.
+  setresources       : Will run setvcpus, setmem and setmaxmem for each
+                       VM in the manifest. VM's must be stopped.
 "
 
 # ------------------------------------
-# The schema consists of an array of HostSpec objects that represent a KVM Node, 
+# The schema consists of an array of HostSpec objects that represent a KVM Node,
 # and contains a list of VmSpec Objects defining the VM instances.
 schema='
 [
@@ -267,7 +267,7 @@ fi
 
 
 case "$action" in
-# --- BUILD 
+# --- BUILD
 build|create|clone)
     if [ -z "$manifest" ]; then
         echo "KVM Spec JSON not provided." >&2

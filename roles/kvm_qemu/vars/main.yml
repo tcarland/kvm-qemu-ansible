@@ -1,5 +1,5 @@
 ---
-kvm_qemu_yum:
+kvm_qemu_dnf:
   - bridge-utils
   - edk2-ovmf
   - ethtool
@@ -22,8 +22,7 @@ kvm_qemu_apt:
   - libvirt-daemon-driver-storage-zfs
   - libxml2
   - ovmf
-  - qemu-kvm
+  - qemu-system-x86
   - qemu-utils
-  - qemu-efi
   - virtinst
   - virt-top
