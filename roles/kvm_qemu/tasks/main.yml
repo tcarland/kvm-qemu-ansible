@@ -3,7 +3,7 @@
   become: true
   tags: ['kvm']
   ansible.builtin.dnf:
-    name: "{{ kvm_qemu_yum }}"
+    name: "{{ kvm_qemu_dnf }}"
     lock_timeout: 180
     state: present
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'

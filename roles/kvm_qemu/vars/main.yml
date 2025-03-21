@@ -1,5 +1,5 @@
 ---
-kvm_qemu_yum:
+kvm_qemu_dnf:
   - bridge-utils
   - edk2-ovmf
   - ethtool
