@@ -1,0 +1,28 @@
+---
+kvm_qemu_users:
+ - tca
+ - tdh
+
+kvm_qemu_groups:
+ - libvirt
+ - libvirt-qemu
+ - kvm
+
+nfs_domain: 'tdh.internal'
+nfs_storage_server: 'tdh01.tdh.internal'
+nfs_storage_export: '/data01/kvm-secondary'
+nfs_storage_mountpoint: '/kvm-secondary'
+
+kvm_primary_storage: '/data01/kvm-primary'
+
+dnsmasq_kvm_domain: 'tdh.internal'
+dnsmasq_primary_resolver: '8.8.8.8'
+dnsmasq_secondary_resolver: '8.8.4.4'
+
+dhcp_range_start: '10.10.5.130'
+dhcp_range_end: '10.10.5.250'
+dhcp_range_netmask: '255.255.255.0'
+dhcp_router_ip: '10.10.5.1'
+
+kvmmgr_bin: '{{ playbook_dir }}/../bin/kvm-mgr.sh'
+kvmsh_bin: '{{ playbook_dir }}/../bin/kvmsh'

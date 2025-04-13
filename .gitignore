@@ -9,5 +9,5 @@
 *.pdf
 
 .ansible
-inventory/**
+inventory/*
 !inventory/example
