@@ -8,18 +8,16 @@
 #  Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
-VERSION="v25.04.13"
+VERSION="v25.04.27"
 AUTHOR="tcarland@gmail.com"
 
 # ------------------------------------
 # defaults
 ubuntu="ubuntu24.04"  # default os-var
-
-jammy="ubuntu-22.04.4-live-server-amd64.iso"  # default image
-jammy_desk="ubuntu-22.04.4-desktop-amd64.iso"
-
 noble="ubuntu-24.04.2-live-server-amd64.iso"
 noble_desk="ubuntu-24.04.2-desktop-amd64.iso"
+jammy="ubuntu-22.04.4-live-server-amd64.iso"  # default image
+jammy_desk="ubuntu-22.04.4-desktop-amd64.iso"
 
 pool="default"
 network="bridge=virbr0"
@@ -36,7 +34,7 @@ disksz="100G"
 mindisksz=5
 disknum=0
 dryrun=0
-cdrom=1
+cdrom=0
 uefi=0
 
 virt_uri="qemu:///system"
@@ -106,7 +104,7 @@ Actions:
   pool-list               : List available pools.
   pool-autostart  <pool>  : Set 'autostart' for pool.
     ---- Volumes ----
-  attach-disk     <name>  : Attach volumes to a vm (use -D and -d options).
+  attach-disk     <name>  : Attach volumes to a vm (use -D, -d and -f options).
   delete-vol      <name>  : Delete a volume (will delete the disk image).
   list-vol        <pool>  : List volumes in pool.
   setmem     <name> <xb>  : Set a new memory value. Default unit is Kib.
@@ -478,7 +476,13 @@ attach*)
 
     for (( i=0; i<$disknum; )); do
         dev="vd${chars[i++]}"
-        img="$target/${name}-$dev.img"
+        img="$target/${name}-$dev"
+        
+        if [[ "$format" == "qcow2" ]]; then
+            img="${img}.qcow2"
+        else
+            img="${img}.img"
+        fi
 
         create_disk "$img" "$disksz" "$format"
 
@@ -517,10 +521,7 @@ create)
     fi
     echo "name=$name"
 
-    if [ -z "$image" ]; then
-        image="$noble"
-        osvar="$ubuntu"
-    elif [ -z "$osvar" ]; then
+    if [ -z "$osvar" ]; then
         echo "$PNAME error: image provided but not os-variant, --osvar is required." >&2
         echo "  use 'os-list' action to show os-variants." >&2
         exit 1
@@ -528,14 +529,23 @@ create)
 
     if [[ $image =~ ^http ]]; then
         srcimg="$image"
+        cdrom=1
     else
         srcimg="$target/$image"
+        if [[ $image =~ '.iso$' ]]; then
+            cdrom=0
+        fi
     fi
 
-    disk="${name}-vda.img"
-    diskimg="${target}/$disk"
+    disk="${target}/${name}-vda"
+ 
+    if [[ "$format" == "qcow2" ]]; then
+        disk="${disk}.qcow2"
+    else
+        disk="${disk}.img"
+    fi
 
-    create_disk "$diskimg" "$bootsz" "$format"
+    create_disk "$disk" "$bootsz" "$format"
 
     rt=$?
     if [ $rt -ne 0 ]; then
@@ -575,11 +585,10 @@ create)
         fi
     fi
 
+    echo "( virt-install --connect $virt_uri ${cmdargs[@]} )"
     if [ $dryrun -eq 0 ]; then
         ( virt-install --connect $virt_uri ${cmdargs[@]} )
         rt=$?
-    else
-        echo "( virt-install --connect $virt_uri ${cmdargs[@]} )"
     fi
 
     if [ $rt -eq 0 ]; then
@@ -595,7 +604,7 @@ cli|shell)
 clone)
     path="${poolmap[$pool]}"
     target="$args"
-    file="$path/$target-vda.img"
+    file="$path/$target-vda"
 
     if [ -z "$path" ]; then
         echo "$PNAME error determining storage path" >&2
@@ -607,12 +616,18 @@ clone)
         echo "$usage"
         exit 1
     fi
+    
+    srcimg=$(ls ${path}/$name-vda.*)
+    if [[ "$srcimg" =~ "qcow2$" ]]; then
+        file="${file}.qcow2"
+    else
+        file="${file}.img"
+    fi
 
+    echo "( virt-clone --connect $virt_uri --original $name --name $target --file $file )"
     if [ $dryrun -eq 0 ]; then
         ( virt-clone --connect $virt_uri --original $name --name $target --file $file )
         rt=$?
-    else
-        echo "( virt-clone --connect $virt_uri --original $name --name $target --file $file )"
     fi
 
     if [ $rt -eq 0 ]; then
