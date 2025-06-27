@@ -8,7 +8,7 @@
 #  Timothy C. Arland <tcarland@gmail.com>
 #
 PNAME=${0##*\/}
-VERSION="v25.04.27"
+VERSION="v25.06.26"
 AUTHOR="tcarland@gmail.com"
 
 # ------------------------------------
@@ -477,7 +477,7 @@ attach*)
     for (( i=0; i<$disknum; )); do
         dev="vd${chars[i++]}"
         img="$target/${name}-$dev"
-        
+
         if [[ "$format" == "qcow2" ]]; then
             img="${img}.qcow2"
         else
@@ -538,7 +538,7 @@ create)
     fi
 
     disk="${target}/${name}-vda"
- 
+
     if [[ "$format" == "qcow2" ]]; then
         disk="${disk}.qcow2"
     else
@@ -557,7 +557,7 @@ create)
              --memory $memory
              --vcpus $vcpus
              --os-variant "$osvar"
-             --disk "path=$diskimg"
+             --disk "path=$disk"
              --network "$network")
 
     if [ $uefi -eq 0 ]; then
@@ -616,7 +616,7 @@ clone)
         echo "$usage"
         exit 1
     fi
-    
+
     srcimg=$(ls ${path}/$name-vda.*)
     if [[ "$srcimg" =~ "qcow2$" ]]; then
         file="${file}.qcow2"
@@ -1015,7 +1015,7 @@ snapshot-list|list-snapshot)
     ;;
 
 # --- PASSTHROUGH OPERATIONS to virsh
-start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|dumpxml|define|dom*|edit|checkpoint-*|net*|iface-*|nwfilter-*)
+start|suspend|restore|save|reset|resume|reboot|console|pool-info|info|block*|dumpxml|define|dom*|edit|checkpoint-*|net*|iface-*|nwfilter-*)
     if [ $dryrun -eq 0 ]; then
         ( $virsh $action $name $args )
     else
