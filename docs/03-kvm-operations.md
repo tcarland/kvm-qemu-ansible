@@ -5,7 +5,7 @@ KVM Operation guide for managing VMs across a KVM Cluster.
 
 <br>
 
---- 
+---
 
 # Table Of Contents
 
@@ -30,26 +30,26 @@ KVM Operation guide for managing VMs across a KVM Cluster.
 
 ## Overview
 
-Once the Ansible playbooks have successfully installed KVM, all hosts 
-should be configured with a KVM Hypervisor, a network bridge, and 
-optionally a NFS share for secondary storage. The playbooks do not, 
-however, configure storage pools or networking on the nodes. The 
-networking should already be configured before continuing with these 
+Once the Ansible playbooks have successfully installed KVM, all hosts
+should be configured with a KVM Hypervisor, a network bridge, and
+optionally a NFS share for secondary storage. The playbooks do not,
+however, configure storage pools or networking on the nodes. The
+networking should already be configured before continuing with these
 steps to configure the storage pools.
 
 Additionally, there are two management scripts provided for managing
 Virtual Machines across the infrastructure.
 
-- **kvmsh**:  This tool primarily wraps the usage of libvirt related 
-tools such as 'virsh', 'virt-install', and 'virt-clone'. It utilizes 
-the same command structure as 'virsh', but provides the ability to 
-perform the additional install and cloning steps along with defaults 
-for use in a clustered setup. This tool is run on individual nodes to 
+- **kvmsh**:  This tool primarily wraps the usage of libvirt related
+tools such as 'virsh', 'virt-install', and 'virt-clone'. It utilizes
+the same command structure as 'virsh', but provides the ability to
+perform the additional install and cloning steps along with defaults
+for use in a clustered setup. This tool is run on individual nodes to
 manipulate the VMs on that given node.
 
 - **kvm-mgr.sh**:  A script for managing VMs across a cluster from a
-single management node. Relying on SSH host keys, the tool takes a 
-manifest describing the VM configurations and utilizes *kvmsh* per node 
+single management node. Relying on SSH host keys, the tool takes a
+manifest describing the VM configurations and utilizes *kvmsh* per node
 to implement various actions like create, start, stop, and delete.
 
 The inventory for KVM hosts is a JSON Manifest of the following schema:
@@ -74,11 +74,11 @@ The inventory for KVM hosts is a JSON Manifest of the following schema:
 ```
 
 
-## Requirements 
+## Requirements
 
 The requirements for running the tools are:
 
-- A management node (like an Ansible server) for running *kvm-mgr.sh* using 
+- A management node (like an Ansible server) for running *kvm-mgr.sh* using
   SSH Host Keys.
 
 - `clustershell` for running 'kvmsh' across nodes is not directly required
@@ -91,7 +91,7 @@ The requirements for running the tools are:
   clush -g lab 'rm kvmsh'
   ```
 - *DnsMasq* should be installed on the management node where 'kvm-mgr.sh' is
-  run from. This is used to provide DNS configuration and Static IP assignments 
+  run from. This is used to provide DNS configuration and Static IP assignments
   for the cluster via DHCP.
 
 - The user running the *kvm-mgr.sh* script should have sudo rights with NOPASSWD set.
@@ -101,13 +101,13 @@ The requirements for running the tools are:
 
 ## Storage Pools
 
-For a first time install, we must define our Storage Pools used to store VM and 
-disk images. Ideally, two storage pools are utilized, a primary storage pool and 
-a secondary pool. The primary storage pool is intended for local, direct-attached 
-storage for hosting VM images running on that given node.  The (optional) secondary 
+For a first time install, we must define our Storage Pools used to store VM and
+disk images. Ideally, two storage pools are utilized, a primary storage pool and
+a secondary pool. The primary storage pool is intended for local, direct-attached
+storage for hosting VM images running on that given node.  The (optional) secondary
 storage pool would be a NFS Share for storing source images, cloned VMs, snapshots, etc.
 
-- Creating the primary storage pool. Note the storage pool path should be made 
+- Creating the primary storage pool. Note the storage pool path should be made
   consistent across all nodes.
   ```sh
   # default pool is our local, primary storage pool.
@@ -144,26 +144,26 @@ storage pool would be a NFS Share for storing source images, cloned VMs, snapsho
   clush -B -g lab 'virsh --connect qemu:///system pool-list --all'
   ```
 
-- Ensure AppArmor permissions are configured for the storage location.  
-  On systems using AppArmor, issues can arrive with block file chains created 
-  from external snapshots. Add permissions to the apparmor local profile, 
-  */etc/apparmor.d/local/abstractions/libvirt-qemu*. The provided Ansible 
+- Ensure AppArmor permissions are configured for the storage location.
+  On systems using AppArmor, issues can arrive with block file chains created
+  from external snapshots. Add permissions to the apparmor local profile,
+  */etc/apparmor.d/local/abstractions/libvirt-qemu*. The provided Ansible
   should configure these permissions.
   ```
   /data01/kvm-primary/** rwk,
   /kvm-secondary/** rwk,
-  ``` 
+  ```
 
 ## Creating a Base VM Image
 
 The managment script, `kvm-mgr.sh`, relies on a base VM image when building
-the VM's. This base images is used across all nodes to build the environment. 
-By default, the scripts use an Ubuntu 24.04 image as the source when creating 
-VMs from scratch, but other ISO's can be provided by the `--image` command 
+the VM's. This base images is used across all nodes to build the environment.
+By default, the scripts use an Ubuntu 24.04 image as the source when creating
+VMs from scratch, but other ISO's can be provided by the `--image` command
 option to `kvmsh` or by setting KVMSH_DEFAULT_IMAGE in the environment.
 
 Since the resulting base VM will be cloned by all nodes when building VM, the
-VM should be created on the NFS Storage pool (secondary) to make it immediately 
+VM should be created on the NFS Storage pool (secondary) to make it immediately
 available to all hosts.
 
 When creating a new VM, the `kvmsh` script looks for the source ISO in a path
@@ -224,53 +224,53 @@ clush -g lab 'kvmsh define ubuntu2404.xml'
 
 ### Ubuntu Installs
 
-Ubuntu installs using the console often require configuring *grub* 
-correctly for console access post-install.  Once the installer completes, 
-add `console=ttyS0` to */etc/default/grub* and run `update-grub` 
-accordingly. Ensure to enable the openSSH server during the install 
+Ubuntu installs using the console often require configuring *grub*
+correctly for console access post-install.  Once the installer completes,
+add `console=ttyS0` to */etc/default/grub* and run `update-grub`
+accordingly. Ensure to enable the openSSH server during the install
 process to ensure access to the vm.
 
-Ubuntu has a number of install options with varying degrees of 
+Ubuntu has a number of install options with varying degrees of
 difficulty for installing with KVM and `virt-install`.
 
-- A Web-based install uses a *http* location as the `image` which means 
-  all assets are downloaded. For Ubuntu 20.04, for example, the web 
-  installer URL provided to `--image` would be set to 
-  `http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/`. 
+- A Web-based install uses a *http* location as the `image` which means
+  all assets are downloaded. For Ubuntu 20.04, for example, the web
+  installer URL provided to `--image` would be set to
+  `http://us.archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/`.
   This method is convienient but is likely to be deprecated in the near future.
 
-- Ubuntu live ISO images place the ISO boot kernel (vmlinuz) in a 
-  subdirectory (typically named `casper`) which causes `virt-install` 
-  to not be able to boot the ISO. Ubuntu still provides a legacy 
+- Ubuntu live ISO images place the ISO boot kernel (vmlinuz) in a
+  subdirectory (typically named `casper`) which causes `virt-install`
+  to not be able to boot the ISO. Ubuntu still provides a legacy
   ISO image installer, however this also is intended to be deprecated.
-  This is still the best *local* install method for Ubuntu 22.04. The 
-  link for these legacy install ISO's was listed in the *focal* release 
+  This is still the best *local* install method for Ubuntu 22.04. The
+  link for these legacy install ISO's was listed in the *focal* release
   notes as being [here](http://cdimage.ubuntu.com/ubuntu-legacy-server/releases/20.04/release/).
 
-- Working with the standard live iso images may require extracting the 
-  image to the local filesystem to allow passing the kernel boot options 
+- Working with the standard live iso images may require extracting the
+  image to the local filesystem to allow passing the kernel boot options
   to `virt-install` which would look like the following:
   ```
   --boot kernel=casper/vmlinuz,initrd=casper/initrd,kernel_args="console=ttyS0"
   ```
-  Note, that mounting the ISO as Read-only won't work as the installer 
+  Note, that mounting the ISO as Read-only won't work as the installer
   wants the *initrd* image to be writeable.
 
-- On successful install of the OS, the *linux-kvm-tools* package should 
-  be installed. Also note that *openssh-server* is typically not installed 
+- On successful install of the OS, the *linux-kvm-tools* package should
+  be installed. Also note that *openssh-server* is typically not installed
   by default.
 
 
 ### Local-only VMs
 
-While this document covers running KVM nodes in a distributed fashion, 
-VMs can be created as local-only instances by using KVM's default NAT 
-interface *virbr0* or `--network "bridge=virbr0"` provided to *kvmsh*. 
+While this document covers running KVM nodes in a distributed fashion,
+VMs can be created as local-only instances by using KVM's default NAT
+interface *virbr0* or `--network "bridge=virbr0"` provided to *kvmsh*.
 
 
 ## Building Virtual Machines
 
-Building the environment is accomplished by providing the JSON manifest 
+Building the environment is accomplished by providing the JSON manifest
 to the `kvm-mgr.sh` script.
 ```sh
 ./bin/kvm-mgr.sh build manifest.json
@@ -298,9 +298,9 @@ Once built, the VMs can be started by via the 'start' action:
 ./bin/kvm-mgr.sh start manifest.json
 ```
 
-NOTE: The new VM's will all have the same 'ubuntu2004' hostname as a result 
-of the clone process (or whatever hostname was used on the base image). The 
-script provides the 'sethostname' action to iterate through all VM's in a 
+NOTE: The new VM's will all have the same 'ubuntu2004' hostname as a result
+of the clone process (or whatever hostname was used on the base image). The
+script provides the 'sethostname' action to iterate through all VM's in a
 manifest and set the hostname(s) accordingly.
 ```sh
 ./bin/kvm-mgr.sh sethostnames manifest.json
@@ -335,8 +335,8 @@ vi zookeepers.json         # update values as desired
 Note that any adjustments to live instances that wish to be persisted should
 also be updated in the corresponding manifest.
 
-Resizing disks requires the VM to be stopped. Use the *qemu-img* tool to 
-resize the disk and then follow normal filesystem methods to grow or shrink 
+Resizing disks requires the VM to be stopped. Use the *qemu-img* tool to
+resize the disk and then follow normal filesystem methods to grow or shrink
 the filesystem. Alternatively, the *virt-resize* command can lvexpand and
 grow the filesystem in one command.
 ```sh
@@ -427,7 +427,7 @@ for x in $( kvmsh vol-list | grep $vmname | \
   kvmsh Finished.
   ```
 
-- Delete a VM without destroying assets.  
+- Delete a VM without destroying assets.
   A given VM under management of libvirt internally stores the XML definition
   of the VM which also defines the attached volumes. The individual VM
   definitions can be exported via `kvmsh dumpxml <name> > name.xml` to save
@@ -493,12 +493,12 @@ t05 :
 ## Migrating Virtual Machines in Offline Mode
 
 Live VM Migration is possible with libvirt and KVM, but not covered by
-this document. The following describes how to migrate VM's offline.  
-Just to be clear, offline migration implies the VM should always be 
+this document. The following describes how to migrate VM's offline.
+Just to be clear, offline migration implies the VM should always be
 stopped first.
 
-This project configures and relies on the primary storage being the 
-same path on all nodes, which makes moving VM's easier as little to 
+This project configures and relies on the primary storage being the
+same path on all nodes, which makes moving VM's easier as little to
 no change to the VM Specification is needed.
 
 Steps to Migrate:
@@ -545,25 +545,61 @@ Lastly, update the kvm-mgr manifest accordingly.
   kvmsh -D 2 -d 40G attach-disk <name>
   ```
 
+## Converting disk formats
+
+Convert a raw image to qcow2.
+```sh
+qemu-img convert -f raw -O qcow2 image.img image.qcow2
+```
+
+Convert a vmware vmdk to qcow2
+```sh
+qemu-img convert -f vmdk -O qcow2 image.vmdk image.qcow2
+```
+
 ## Virtual Machine Snapshots
 
-Typically snapshots within KVM-Qemu require disk images in the *qcow2* 
-format, though these are considered *internal* snapshots. These style 
-snapshots are considered to be less reliable and can potentially end in 
-image corruption. 
+Internal snapshots within KVM-Qemu require disk images in the *qcow2*
+format. This style of snapshot is contained within the qcow format and
+is generally considered poorly maintained upstream by QEMU.
 
-Instead, *kvmsh* implements external snapshots only, which support either 
-raw or qcow images. The current implementation supports snapshotting the 
-image state only, while the host is offline.  Machine memory state, while 
+Instead, *kvmsh* uses external snapshots, which support either *raw* or
+*qcow2* images. The current implementation supports snapshotting the
+image state only, while the host is offline. Machine memory state, while
 running, is currently not supported.
 
-Snapshot operations are straight-forward commands that take the vm name 
+Snapshot operations are straight-forward commands that take the vm name
 and the snapshot name where appropriate. The primary commands are
 *snapshot-create*, *snapshot-delete*, *snapshot-revert* and *snapshot-info*.
 
-Note that *snapshot-revert* is not currently supported with external 
-snapshots in kvm-qemu and must be reverted manually via *edit*. 
-Note that external snapshots will work with *raw* disk images, but will 
-change the file-type to *qcow2* when pointing to a snapshot. If 
-manually reverting to the base img, ensure the type is also changed 
+Note that *snapshot-revert* is not currently supported with external
+snapshots in kvm-qemu and must be reverted manually via *edit*.
+Note that external snapshots will work with *raw* disk images, but will
+change the file-type to *qcow2* when pointing to a snapshot. If
+manually reverting to the base img, ensure the type is also changed
 back to *raw* to match.
+
+### Merging snapshots
+
+Showing the current backing chain of a snapshot.
+```sh
+qemu-img info --force-share --backing-chain cur.qcow2
+kvmsh domblklist <vm>
+```
+
+**Method 1** - Online virsh *blockcommit*
+```sh
+kvmsh blockcommit <vm> vda --base=vm-vda.img --top=vm-vda.snap-name --wait --verbose
+```
+
+The alternate virsh command of *blockpull* pulls a snapshot layer
+forward into the active layer.
+
+**Method 2** - Offline merge via *qemu-img*
+
+Given an image chain of 'base <- sn1 <- sn2 <- sn3' and reducing the chain by
+merging *sn2* into *sn1*
+```sh
+qemu-img commit sn2.qcow2
+qemu-img rebase -u -b sn1.qcow2 sn3.qcow2
+```
