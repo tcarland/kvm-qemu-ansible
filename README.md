@@ -1,6 +1,8 @@
 kvm-qemu-ansible
 =================
 
+Copyright (c)2015-2026 Timothy C. Arland <tcarland at gmail dot com>
+
 Ansible playbooks and scripts for installing and managing a distributed, 
 multi-node KVM-QEMU environment on Linux systems. 
 

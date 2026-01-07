@@ -3,3 +3,8 @@ kvm_qemu_groups:
   - libvirt
   - libvirt-qemu
   - kvm
+
+libvirt_listen_tls: 0
+libvirt_crt_path: ''
+libvirt_key_path: ''
+libvirt_ca_path: ''
