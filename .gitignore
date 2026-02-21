@@ -11,3 +11,4 @@
 .ansible
 inventory/*
 !inventory/example
+site

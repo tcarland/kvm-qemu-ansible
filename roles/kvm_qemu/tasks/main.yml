@@ -52,9 +52,15 @@
         dest: /etc/apparmor.d/local/abstractions/libvirt-qemu
         mode: "0644"
       notify: Restart_apparmor
+    - name: Update listen_tls if needed
+      ansible.builtin.set_fact:
+        libvirt_listen_tls: 1
+      when:
+        - libvirt_crt_path is defined
+        - libvirt_key_path is defined
     - name: Copy libvirtd.conf
-      ansible.builtin.copy:
-        src: libvirtd.conf
+      ansible.builtin.template:
+        src: libvirtd.conf.j2
         dest: /etc/libvirt/libvirtd.conf
         mode: "0644"
     - name: Copy libvirt.conf (client)
@@ -75,6 +81,30 @@
   notify: Restart_libvirtd
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
+- name: Copy Certificate files if provided.
+  become: true
+  tags: ['kvm']
+  block:
+    - name: Copy SSL Certificate
+      ansible.builtin.copy:
+        src: '{{ libvirt_crt_path }}'
+        dest: '/etc/pki/libvirt/servercert.pem'
+        mode: '0644'
+    - name: Copy SSL Private Key
+      ansible.builtin.copy:
+        src: '{{ libvirt_key_path }}'
+        dest: '/etc/pki/libvirt/private/serverkey.pem'
+        mode: '0640'
+    - name: Copy CA Certificate
+      ansible.builtin.copy:
+        src: '{{ libvirt_ca_path }}'
+        dest: '/etc/pki/CA/cacert.pem'
+        mode: '0644'
+      when: libvirt_ca_path is defined
+  when:
+    - libvirt_crt_path is defined
+    - libvirt_key_path is defined
+        
 - name: Enable physical bridge br0 (RHEL)
   become: true
   tags: ['kvm']

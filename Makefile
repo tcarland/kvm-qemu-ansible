@@ -4,15 +4,17 @@ CP=cp --preserve
 
 all: docs
 
-pdf: docs
-
 .PHONY: docs
 docs:
+	( mkdocs build )
+
+pdf: 
 	( cd docs; make all )
 	@echo
 
 clean:
 	( cd docs; make clean )
+	( rm -rf site/ ) || true
 	@echo
 
 distclean: clean

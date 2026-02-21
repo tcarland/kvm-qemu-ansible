@@ -1,0 +1,13 @@
+site_name: kvm-qemu-ansible
+
+nav:
+  - Overview: 'index.md'
+  - Prerequisites: '01-prerequisites.md'
+  - KVM Ansible: '02-kvm-ansible.md'
+  - KVM Operations: '03-kvm-operations.md'
+
+markdown_extensions:
+  - pymdownx.snippets
+
+theme:
+  name: material

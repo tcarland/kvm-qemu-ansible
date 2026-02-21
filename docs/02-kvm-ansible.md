@@ -7,7 +7,7 @@ and NFS Server/Clients.
 Prior to running the Ansible Playbooks, the base storage systems to be 
 used for the primary storage pool (and optional NFS Server) should already 
 be created and mounted. Additionally a network bridge for *br0* should be 
-configured as described in the [01-prerequisites.md](docs/01-prerequisites.md) 
+configured as described in the [01-prerequisites.md](01-prerequisites.md) 
 document.
 
 

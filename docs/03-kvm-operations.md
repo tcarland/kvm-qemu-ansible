@@ -557,6 +557,33 @@ Convert a vmware vmdk to qcow2
 qemu-img convert -f vmdk -O qcow2 image.vmdk image.qcow2
 ```
 
+## Resizing disks
+
+This seems to work primarily on qcow2 image formats and typicall
+such operations are safest performed offline.
+
+Increasing disk size:
+```sh
+qemu-img resize <img.qcow2> +xxG
+```
+
+After increasing the image size, the disk partiton would need
+resizing from within the vm
+```sh
+fdisk -l  # should show available space
+sudo growpart /dev/vda 1  # parted can do this, but start sector must match
+# alternative is to use cfdisk which makes the resize pretty easy
+# extend physical volume
+pvdisplay
+pvresize /dev/vda3
+# extend logical volume
+lvdisplay
+lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+# resize mount
+resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
+#xfs_growfs /  # for XFS
+```
+
 ## Virtual Machine Snapshots
 
 Internal snapshots within KVM-Qemu require disk images in the *qcow2*

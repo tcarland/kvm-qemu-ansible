@@ -26,3 +26,8 @@ dhcp_router_ip: '10.10.5.1'
 
 kvmmgr_bin: '{{ playbook_dir }}/../bin/kvm-mgr.sh'
 kvmsh_bin: '{{ playbook_dir }}/../bin/kvmsh'
+
+libvirt_listen_tls: 0
+libvirt_crt_path: ''
+libvirt_key_path: ''
+libvirt_ca_path: ''
