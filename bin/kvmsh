@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
 #
-#  kvmsh
+#  kvmsh - Command-line tool for manipulating virtual machines making
+#  use of kvm-qemu tools: 'virsh', 'virt-install', and 'virt-clone'.
 #
-#  Command-line tool for manipulating virtual machines wrapping the use
-#  of kvm-qemu tools: 'virsh', 'virt-install', and 'virt-clone'.
-#
-#  Timothy C. Arland <tcarland@gmail.com>
+#  Timothy C. Arland <tcarland at gmail dot com>
 #
 PNAME=${0##*\/}
-VERSION="v26.01.08"
-AUTHOR="tcarland@gmail.com"
+VERSION="v26.02.21"
+AUTHOR="Timothy C. Arland <tcarland at gmail dot com"
 
 # ------------------------------------
 # defaults
