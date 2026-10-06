@@ -6,16 +6,18 @@
 #  Timothy C. Arland <tcarland at gmail dot com>
 #
 PNAME=${0##*\/}
-VERSION="v26.02.21"
+VERSION="v26.10.10"
 AUTHOR="Timothy C. Arland <tcarland at gmail dot com"
 
 # ------------------------------------
 # defaults
 ubuntu="ubuntu24.04"  # default os-var
-noble="ubuntu-24.04.2-live-server-amd64.iso"
-noble_desk="ubuntu-24.04.2-desktop-amd64.iso"
-jammy="ubuntu-22.04.4-live-server-amd64.iso"  # default image
-jammy_desk="ubuntu-22.04.4-desktop-amd64.iso"
+resolute="ubuntu-26.04.1-live-server-amd64.iso"
+resolute_desk="ubuntu-26.04.1-desktop-amd64.iso"
+noble="ubuntu-24.04.5-live-server-amd64.iso"
+noble_desk="ubuntu-24.04.5-desktop-amd64.iso"
+jammy="ubuntu-22.04.5-live-server-amd64.iso"  # default image
+jammy_desk="ubuntu-22.04.5-desktop-amd64.iso"
 
 pool="default"
 network="bridge=virbr0"
